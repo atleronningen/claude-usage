@@ -33,6 +33,16 @@ def test_load_settings_falls_back_to_defaults_for_missing_keys(tmp_path, monkeyp
     assert settings == config.Settings(refresh_interval_minutes=5, notifications_enabled=True)
 
 
+def test_load_settings_falls_back_to_defaults_for_corrupt_json(tmp_path, monkeypatch):
+    config_path = tmp_path / "config.json"
+    config_path.write_text("{ invalid json ]")
+    monkeypatch.setattr(config, "CONFIG_PATH", config_path)
+
+    settings = config.load_settings()
+
+    assert settings == config.Settings(refresh_interval_minutes=5, notifications_enabled=True)
+
+
 def test_load_credentials_returns_cookie_and_url(monkeypatch, tmp_path):
     env_file = tmp_path / ".env"
     env_file.write_text(

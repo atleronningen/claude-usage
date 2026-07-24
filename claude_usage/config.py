@@ -27,8 +27,11 @@ class Settings:
 def load_settings() -> Settings:
     if not CONFIG_PATH.exists():
         return Settings()
-    with open(CONFIG_PATH) as f:
-        raw = json.load(f)
+    try:
+        with open(CONFIG_PATH) as f:
+            raw = json.load(f)
+    except (json.JSONDecodeError, OSError):
+        return Settings()
     return Settings(
         refresh_interval_minutes=raw.get(
             "refresh_interval_minutes", DEFAULT_REFRESH_INTERVAL_MINUTES
@@ -47,7 +50,7 @@ def save_settings(settings: Settings) -> None:
 
 def load_credentials() -> tuple[str, str]:
     env_path = Path.cwd() / ".env"
-    load_dotenv(dotenv_path=env_path, override=True)
+    load_dotenv(dotenv_path=env_path)
     cookie = os.environ.get("CLAUDE_USAGE_COOKIE")
     api_url = os.environ.get("CLAUDE_USAGE_API_URL")
     if not cookie or not api_url:

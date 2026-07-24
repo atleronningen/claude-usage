@@ -41,9 +41,12 @@ def save_settings(settings: Settings) -> None:
         json.dump(asdict(settings), f, indent=2)
 
 
+def env_file_path() -> Path:
+    return Path.cwd() / ".env"
+
+
 def load_credentials() -> tuple[str, str]:
-    env_path = Path.cwd() / ".env"
-    file_values = dotenv_values(env_path)
+    file_values = dotenv_values(env_file_path())
     cookie = os.environ.get("CLAUDE_USAGE_COOKIE") or file_values.get("CLAUDE_USAGE_COOKIE")
     api_url = os.environ.get("CLAUDE_USAGE_API_URL") or file_values.get("CLAUDE_USAGE_API_URL")
     if not cookie or not api_url:

@@ -1,3 +1,5 @@
+import subprocess
+
 import rumps
 
 from claude_usage import config
@@ -19,12 +21,21 @@ class ClaudeUsageApp(rumps.App):
 
         self.error_item = rumps.MenuItem("Ingen feil")
         self.refresh_item = rumps.MenuItem("Oppdater nå", callback=self.refresh)
+        self.help_item = rumps.MenuItem(
+            "Hjelp: oppdater cookie", callback=self._show_help
+        )
         self.notifications_item = rumps.MenuItem(
             "Varsle ved 90%", callback=self._toggle_notifications
         )
         self.notifications_item.state = self.settings.notifications_enabled
 
-        self.menu = [self.error_item, None, self.refresh_item, self.notifications_item]
+        self.menu = [
+            self.error_item,
+            None,
+            self.refresh_item,
+            self.help_item,
+            self.notifications_item,
+        ]
 
         self.timer = rumps.Timer(self.refresh, REFRESH_INTERVAL_SECONDS)
         self.timer.start()
@@ -59,6 +70,20 @@ class ClaudeUsageApp(rumps.App):
     def _show_error(self, message: str) -> None:
         self.title = "⚠️"
         self.error_item.title = message
+
+    def _show_help(self, _sender) -> None:
+        subprocess.run(["open", "-e", str(config.env_file_path())])
+        rumps.alert(
+            title="Slik henter du en fersk cookie",
+            message=(
+                "1. Åpne claude.ai/settings/usage i nettleseren\n"
+                "2. Åpne utviklerverktøy (⌘+⌥+I) → Network-fanen\n"
+                "3. Last siden på nytt, klikk på \"usage\"-forespørselen\n"
+                "4. Under Headers → Request Headers: kopier hele Cookie-verdien\n"
+                "5. Lim inn i CLAUDE_USAGE_COOKIE i .env-filen som nettopp åpnet seg\n"
+                "6. Lagre filen, og klikk \"Oppdater nå\" i menyen"
+            ),
+        )
 
 
 def main() -> None:

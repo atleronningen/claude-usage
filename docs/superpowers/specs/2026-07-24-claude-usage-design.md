@@ -2,7 +2,7 @@
 
 Dato: 2026-07-24
 
-Mappenavn i Playground: `claude-status`.
+Mappenavn i Playground: `claude-usage`.
 
 ## Formål
 

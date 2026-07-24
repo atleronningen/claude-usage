@@ -1,7 +1,7 @@
 # Claude Usage — for Claude
 
 Menylinje-app (macOS) som gir status på tokenforbruk for Claude.
-Mappenavn: claude-status.
+Mappenavn: claude-usage.
 
 ## Stack
 

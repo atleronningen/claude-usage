@@ -1,5 +1,7 @@
 # Claude Usage
 
+[github.com/atleronningen/claude-usage](https://github.com/atleronningen/claude-usage)
+
 En liten macOS-menylinje-app som viser hvor mye av Claude.ai-abonnementet
 (Pro/Max) du har brukt opp — både session-grensen (5 timer) og den
 ukentlige grensen, oppdatert hvert minutt.

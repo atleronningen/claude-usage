@@ -1,4 +1,6 @@
+import shutil
 import subprocess
+from pathlib import Path
 
 import rumps
 
@@ -7,6 +9,7 @@ from claude_usage.notifier import ThresholdNotifier
 from claude_usage.usage_client import UsageAuthError, UsageFetchError, fetch_usage
 
 REFRESH_INTERVAL_SECONDS = 60
+LAUNCH_AGENT_PLIST_PATH = Path.home() / "Library" / "LaunchAgents" / "com.atle.claude-usage.plist"
 
 
 class ClaudeUsageApp(rumps.App):
@@ -25,12 +28,15 @@ class ClaudeUsageApp(rumps.App):
             "Varsle ved 90%", callback=self._toggle_notifications
         )
         self.notifications_item.state = self.settings.notifications_enabled
+        self.uninstall_item = rumps.MenuItem("Avinstaller", callback=self._uninstall)
 
         self.menu = [
             self.error_item,
             None,
             self.refresh_item,
             self.notifications_item,
+            None,
+            self.uninstall_item,
         ]
 
         self.timer = rumps.Timer(self.refresh, REFRESH_INTERVAL_SECONDS)
@@ -66,6 +72,36 @@ class ClaudeUsageApp(rumps.App):
     def _show_error(self, message: str) -> None:
         self.title = "⚠️"
         self.error_item.title = message
+
+    def _uninstall(self, _sender) -> None:
+        response = rumps.alert(
+            title="Avinstaller Claude Usage",
+            message=(
+                "Dette fjerner autostart-oppsettet (LaunchAgent) og lagrede "
+                "innstillinger. Prosjektmappen og .env beholdes. Appen "
+                "avsluttes etterpå."
+            ),
+            ok="Avinstaller",
+            cancel="Avbryt",
+        )
+        if response != 1:
+            return
+
+        if LAUNCH_AGENT_PLIST_PATH.exists():
+            subprocess.run(
+                ["launchctl", "unload", str(LAUNCH_AGENT_PLIST_PATH)],
+                capture_output=True,
+            )
+            LAUNCH_AGENT_PLIST_PATH.unlink()
+
+        if config.CONFIG_DIR.exists():
+            shutil.rmtree(config.CONFIG_DIR)
+
+        rumps.alert(
+            title="Avinstallert",
+            message="LaunchAgent og lagrede innstillinger er fjernet.",
+        )
+        rumps.quit_application()
 
     def _show_help(self, _sender) -> None:
         subprocess.run(["open", "-e", str(config.env_file_path())])

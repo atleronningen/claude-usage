@@ -1,5 +1,6 @@
+from unittest.mock import MagicMock, patch
+
 import pytest
-import responses
 
 from claude_usage.usage_client import (
     UsageAuthError,
@@ -24,22 +25,35 @@ def _sample_response(five_hour_utilization=62.0, seven_day_utilization=58.0):
     }
 
 
-@responses.activate
-def test_fetch_usage_parses_percentages():
-    responses.add(responses.GET, API_URL, json=_sample_response(), status=200)
+def _mock_response(status_code, json_data=None):
+    mock_resp = MagicMock()
+    mock_resp.status_code = status_code
+    mock_resp.json.return_value = json_data or {}
+    if status_code >= 400:
+        from curl_cffi.requests.exceptions import HTTPError
+
+        mock_resp.raise_for_status.side_effect = HTTPError(f"{status_code} error")
+    else:
+        mock_resp.raise_for_status.side_effect = None
+    return mock_resp
+
+
+@patch("claude_usage.usage_client.requests.get")
+def test_fetch_usage_parses_percentages(mock_get):
+    mock_get.return_value = _mock_response(200, _sample_response())
 
     usage = fetch_usage(cookie="session=abc", api_url=API_URL)
 
     assert usage == UsageData(session_percent=62, weekly_percent=58)
+    mock_get.assert_called_once_with(
+        API_URL, headers={"Cookie": "session=abc"}, impersonate="chrome", timeout=10
+    )
 
 
-@responses.activate
-def test_fetch_usage_rounds_float_percentages():
-    responses.add(
-        responses.GET,
-        API_URL,
-        json=_sample_response(five_hour_utilization=61.6, seven_day_utilization=58.4),
-        status=200,
+@patch("claude_usage.usage_client.requests.get")
+def test_fetch_usage_rounds_float_percentages(mock_get):
+    mock_get.return_value = _mock_response(
+        200, _sample_response(five_hour_utilization=61.6, seven_day_utilization=58.4)
     )
 
     usage = fetch_usage(cookie="session=abc", api_url=API_URL)
@@ -47,33 +61,43 @@ def test_fetch_usage_rounds_float_percentages():
     assert usage == UsageData(session_percent=62, weekly_percent=58)
 
 
-@responses.activate
-def test_fetch_usage_raises_auth_error_on_401():
-    responses.add(responses.GET, API_URL, json={}, status=401)
+@patch("claude_usage.usage_client.requests.get")
+def test_fetch_usage_raises_auth_error_on_401(mock_get):
+    mock_get.return_value = _mock_response(401)
 
     with pytest.raises(UsageAuthError):
         fetch_usage(cookie="session=expired", api_url=API_URL)
 
 
-@responses.activate
-def test_fetch_usage_raises_auth_error_on_403():
-    responses.add(responses.GET, API_URL, json={}, status=403)
+@patch("claude_usage.usage_client.requests.get")
+def test_fetch_usage_raises_auth_error_on_403(mock_get):
+    mock_get.return_value = _mock_response(403)
 
     with pytest.raises(UsageAuthError):
         fetch_usage(cookie="session=expired", api_url=API_URL)
 
 
-@responses.activate
-def test_fetch_usage_raises_fetch_error_on_server_error():
-    responses.add(responses.GET, API_URL, json={}, status=500)
+@patch("claude_usage.usage_client.requests.get")
+def test_fetch_usage_raises_fetch_error_on_server_error(mock_get):
+    mock_get.return_value = _mock_response(500)
 
     with pytest.raises(UsageFetchError):
         fetch_usage(cookie="session=abc", api_url=API_URL)
 
 
-@responses.activate
-def test_fetch_usage_raises_fetch_error_on_unexpected_shape():
-    responses.add(responses.GET, API_URL, json={"unexpected": "shape"}, status=200)
+@patch("claude_usage.usage_client.requests.get")
+def test_fetch_usage_raises_fetch_error_on_unexpected_shape(mock_get):
+    mock_get.return_value = _mock_response(200, {"unexpected": "shape"})
+
+    with pytest.raises(UsageFetchError):
+        fetch_usage(cookie="session=abc", api_url=API_URL)
+
+
+@patch("claude_usage.usage_client.requests.get")
+def test_fetch_usage_raises_fetch_error_on_network_error(mock_get):
+    from curl_cffi.requests.exceptions import RequestException
+
+    mock_get.side_effect = RequestException("connection failed")
 
     with pytest.raises(UsageFetchError):
         fetch_usage(cookie="session=abc", api_url=API_URL)

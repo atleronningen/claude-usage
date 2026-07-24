@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-import requests
+from curl_cffi import requests
 
 
 class UsageAuthError(Exception):
@@ -19,8 +19,10 @@ class UsageData:
 
 def fetch_usage(cookie: str, api_url: str) -> UsageData:
     try:
-        response = requests.get(api_url, headers={"Cookie": cookie}, timeout=10)
-    except requests.RequestException as exc:
+        response = requests.get(
+            api_url, headers={"Cookie": cookie}, impersonate="chrome", timeout=10
+        )
+    except requests.exceptions.RequestException as exc:
         raise UsageFetchError(f"Nettverksfeil ved henting av usage-data: {exc}") from exc
 
     if response.status_code in (401, 403):
@@ -30,7 +32,7 @@ def fetch_usage(cookie: str, api_url: str) -> UsageData:
 
     try:
         response.raise_for_status()
-    except requests.HTTPError as exc:
+    except requests.exceptions.HTTPError as exc:
         raise UsageFetchError(f"Uventet HTTP-status: {response.status_code}") from exc
 
     try:

@@ -19,11 +19,8 @@ class ClaudeUsageApp(rumps.App):
         self.settings = config.load_settings()
         self.notifier = ThresholdNotifier()
 
-        self.error_item = rumps.MenuItem("Ingen feil")
+        self.error_item = rumps.MenuItem("Ingen feil", callback=self._show_help)
         self.refresh_item = rumps.MenuItem("Oppdater nå", callback=self.refresh)
-        self.help_item = rumps.MenuItem(
-            "Hjelp: oppdater cookie", callback=self._show_help
-        )
         self.notifications_item = rumps.MenuItem(
             "Varsle ved 90%", callback=self._toggle_notifications
         )
@@ -33,7 +30,6 @@ class ClaudeUsageApp(rumps.App):
             self.error_item,
             None,
             self.refresh_item,
-            self.help_item,
             self.notifications_item,
         ]
 
@@ -54,8 +50,8 @@ class ClaudeUsageApp(rumps.App):
         except config.CredentialsMissingError as exc:
             self._show_error(str(exc))
             return
-        except UsageAuthError as exc:
-            self._show_error(f"{exc} — oppdater .env")
+        except UsageAuthError:
+            self._show_error("Cookien utløpt – oppdater")
             return
         except UsageFetchError as exc:
             self._show_error(str(exc))

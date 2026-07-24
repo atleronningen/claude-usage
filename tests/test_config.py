@@ -10,17 +10,17 @@ def test_load_settings_returns_defaults_when_no_file(tmp_path, monkeypatch):
 
     settings = config.load_settings()
 
-    assert settings == config.Settings(refresh_interval_minutes=5, notifications_enabled=True)
+    assert settings == config.Settings(notifications_enabled=True)
 
 
 def test_save_then_load_settings_round_trips(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "CONFIG_DIR", tmp_path)
     monkeypatch.setattr(config, "CONFIG_PATH", tmp_path / "config.json")
 
-    config.save_settings(config.Settings(refresh_interval_minutes=15, notifications_enabled=False))
+    config.save_settings(config.Settings(notifications_enabled=False))
     loaded = config.load_settings()
 
-    assert loaded == config.Settings(refresh_interval_minutes=15, notifications_enabled=False)
+    assert loaded == config.Settings(notifications_enabled=False)
 
 
 def test_load_settings_falls_back_to_defaults_for_missing_keys(tmp_path, monkeypatch):
@@ -30,7 +30,7 @@ def test_load_settings_falls_back_to_defaults_for_missing_keys(tmp_path, monkeyp
 
     settings = config.load_settings()
 
-    assert settings == config.Settings(refresh_interval_minutes=5, notifications_enabled=True)
+    assert settings == config.Settings(notifications_enabled=True)
 
 
 def test_load_settings_falls_back_to_defaults_for_corrupt_json(tmp_path, monkeypatch):
@@ -40,7 +40,7 @@ def test_load_settings_falls_back_to_defaults_for_corrupt_json(tmp_path, monkeyp
 
     settings = config.load_settings()
 
-    assert settings == config.Settings(refresh_interval_minutes=5, notifications_enabled=True)
+    assert settings == config.Settings(notifications_enabled=True)
 
 
 def test_load_credentials_returns_cookie_and_url(monkeypatch, tmp_path):

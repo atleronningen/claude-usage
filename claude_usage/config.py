@@ -8,10 +8,7 @@ from dotenv import load_dotenv
 CONFIG_DIR = Path.home() / ".claude-usage"
 CONFIG_PATH = CONFIG_DIR / "config.json"
 
-DEFAULT_REFRESH_INTERVAL_MINUTES = 5
 DEFAULT_NOTIFICATIONS_ENABLED = True
-
-VALID_REFRESH_INTERVALS = (1, 5, 15)
 
 
 class CredentialsMissingError(Exception):
@@ -20,7 +17,6 @@ class CredentialsMissingError(Exception):
 
 @dataclass
 class Settings:
-    refresh_interval_minutes: int = DEFAULT_REFRESH_INTERVAL_MINUTES
     notifications_enabled: bool = DEFAULT_NOTIFICATIONS_ENABLED
 
 
@@ -33,9 +29,6 @@ def load_settings() -> Settings:
     except (json.JSONDecodeError, OSError):
         return Settings()
     return Settings(
-        refresh_interval_minutes=raw.get(
-            "refresh_interval_minutes", DEFAULT_REFRESH_INTERVAL_MINUTES
-        ),
         notifications_enabled=raw.get(
             "notifications_enabled", DEFAULT_NOTIFICATIONS_ENABLED
         ),

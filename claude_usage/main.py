@@ -4,6 +4,8 @@ from claude_usage import config
 from claude_usage.notifier import ThresholdNotifier
 from claude_usage.usage_client import UsageAuthError, UsageFetchError, fetch_usage
 
+REFRESH_INTERVAL_SECONDS = 60
+
 
 class ClaudeUsageApp(rumps.App):
     def __init__(self):
@@ -17,50 +19,17 @@ class ClaudeUsageApp(rumps.App):
 
         self.error_item = rumps.MenuItem("Ingen feil")
         self.refresh_item = rumps.MenuItem("Oppdater nå", callback=self.refresh)
-        self.settings_menu = self._build_settings_menu()
-
-        self.menu = [self.error_item, None, self.refresh_item, self.settings_menu]
-
-        self.timer = rumps.Timer(self.refresh, self.settings.refresh_interval_minutes * 60)
-        self.timer.start()
-
-        self.refresh(None)
-
-    def _build_settings_menu(self) -> rumps.MenuItem:
-        self.interval_items = {}
-        interval_menu = rumps.MenuItem("Oppdateringsintervall")
-        for minutes in config.VALID_REFRESH_INTERVALS:
-            item = rumps.MenuItem(
-                f"{minutes} min", callback=self._make_interval_callback(minutes)
-            )
-            item.state = minutes == self.settings.refresh_interval_minutes
-            interval_menu.add(item)
-            self.interval_items[minutes] = item
-
         self.notifications_item = rumps.MenuItem(
             "Varsle ved 90%", callback=self._toggle_notifications
         )
         self.notifications_item.state = self.settings.notifications_enabled
 
-        settings_menu = rumps.MenuItem("Innstillinger")
-        settings_menu.add(interval_menu)
-        settings_menu.add(self.notifications_item)
-        return settings_menu
+        self.menu = [self.error_item, None, self.refresh_item, self.notifications_item]
 
-    def _make_interval_callback(self, minutes: int):
-        def callback(_sender):
-            self.settings.refresh_interval_minutes = minutes
-            config.save_settings(self.settings)
-            for item_minutes, item in self.interval_items.items():
-                item.state = item_minutes == minutes
-            self._restart_timer()
-
-        return callback
-
-    def _restart_timer(self) -> None:
-        self.timer.stop()
-        self.timer = rumps.Timer(self.refresh, self.settings.refresh_interval_minutes * 60)
+        self.timer = rumps.Timer(self.refresh, REFRESH_INTERVAL_SECONDS)
         self.timer.start()
+
+        self.refresh(None)
 
     def _toggle_notifications(self, sender) -> None:
         self.settings.notifications_enabled = not self.settings.notifications_enabled

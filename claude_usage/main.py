@@ -10,6 +10,7 @@ from claude_usage.usage_client import UsageAuthError, UsageFetchError, fetch_usa
 
 REFRESH_INTERVAL_SECONDS = 60
 LAUNCH_AGENT_PLIST_PATH = Path.home() / "Library" / "LaunchAgents" / "com.atle.claude-usage.plist"
+LAUNCH_AGENT_LABEL = "com.atle.claude-usage"
 
 
 class ClaudeUsageApp(rumps.App):
@@ -87,11 +88,8 @@ class ClaudeUsageApp(rumps.App):
         if response != 1:
             return
 
-        if LAUNCH_AGENT_PLIST_PATH.exists():
-            subprocess.run(
-                ["launchctl", "unload", str(LAUNCH_AGENT_PLIST_PATH)],
-                capture_output=True,
-            )
+        plist_existed = LAUNCH_AGENT_PLIST_PATH.exists()
+        if plist_existed:
             LAUNCH_AGENT_PLIST_PATH.unlink()
 
         if config.CONFIG_DIR.exists():
@@ -101,6 +99,12 @@ class ClaudeUsageApp(rumps.App):
             title="Avinstallert",
             message="LaunchAgent og lagrede innstillinger er fjernet.",
         )
+
+        if plist_existed:
+            subprocess.run(
+                ["launchctl", "remove", LAUNCH_AGENT_LABEL],
+                capture_output=True,
+            )
         rumps.quit_application()
 
     def _show_help(self, _sender) -> None:

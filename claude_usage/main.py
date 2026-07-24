@@ -23,7 +23,7 @@ class ClaudeUsageApp(rumps.App):
         self.settings = config.load_settings()
         self.notifier = ThresholdNotifier()
 
-        self.error_item = rumps.MenuItem("Ingen feil", callback=self._show_help)
+        self.error_item = rumps.MenuItem("Ingen feil", callback=None)
         self.refresh_item = rumps.MenuItem("Oppdater nå", callback=self.refresh)
         self.notifications_item = rumps.MenuItem(
             "Varsle ved 90%", callback=self._toggle_notifications
@@ -55,24 +55,29 @@ class ClaudeUsageApp(rumps.App):
             cookie, api_url = config.load_credentials()
             usage = fetch_usage(cookie, api_url)
         except config.CredentialsMissingError as exc:
-            self._show_error(str(exc))
+            self._show_error(str(exc), actionable=True)
             return
         except UsageAuthError:
-            self._show_error("Cookien utløpt – oppdater")
+            self._show_error("Cookien utløpt – oppdater", actionable=True)
             return
         except UsageFetchError as exc:
-            self._show_error(str(exc))
+            self._show_error(str(exc), actionable=False)
+            return
+        except Exception as exc:
+            self._show_error(f"Uventet feil: {exc}", actionable=False)
             return
 
         self.title = f"S:{usage.session_percent}% U:{usage.weekly_percent}%"
         self.error_item.title = "Ingen feil"
+        self.error_item.set_callback(None)
         self.notifier.check(
             usage.session_percent, usage.weekly_percent, self.settings.notifications_enabled
         )
 
-    def _show_error(self, message: str) -> None:
+    def _show_error(self, message: str, actionable: bool = False) -> None:
         self.title = "⚠️"
         self.error_item.title = message
+        self.error_item.set_callback(self._show_help if actionable else None)
 
     def _uninstall(self, _sender) -> None:
         response = rumps.alert(

@@ -42,7 +42,7 @@ def save_settings(settings: Settings) -> None:
 
 
 def env_file_path() -> Path:
-    return Path.cwd() / ".env"
+    return Path(__file__).resolve().parent.parent / ".env"
 
 
 def load_credentials() -> tuple[str, str]:

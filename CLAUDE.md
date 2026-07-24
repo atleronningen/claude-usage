@@ -5,7 +5,11 @@ Mappenavn: claude-usage.
 
 ## Stack
 
-Python 3, rumps (menylinje-UI), requests, python-dotenv, pytest (dev).
+Python 3, rumps (menylinje-UI), curl_cffi, python-dotenv, pytest (dev).
+
+`curl_cffi` brukes i stedet for `requests` fordi claude.ai sitt
+usage-API er bak Cloudflare-beskyttelse som blokkerer på TLS-fingerprint
+— se kommentaren i `usage_client.py` for detaljer.
 
 ## Kommandoer
 

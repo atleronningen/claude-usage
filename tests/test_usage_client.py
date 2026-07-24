@@ -95,9 +95,9 @@ def test_fetch_usage_raises_fetch_error_on_unexpected_shape(mock_get):
 
 @patch("claude_usage.usage_client.requests.get")
 def test_fetch_usage_raises_fetch_error_on_network_error(mock_get):
-    from curl_cffi.requests.exceptions import RequestException
+    from curl_cffi.requests.exceptions import CurlError
 
-    mock_get.side_effect = RequestException("connection failed")
+    mock_get.side_effect = CurlError("connection failed")
 
     with pytest.raises(UsageFetchError):
         fetch_usage(cookie="session=abc", api_url=API_URL)

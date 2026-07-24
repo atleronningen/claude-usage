@@ -49,7 +49,7 @@ def test_load_credentials_returns_cookie_and_url(monkeypatch, tmp_path):
         "CLAUDE_USAGE_COOKIE=session=abc\n"
         "CLAUDE_USAGE_API_URL=https://claude.ai/api/organizations/org/usage\n"
     )
-    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(config, "env_file_path", lambda: env_file)
     monkeypatch.delenv("CLAUDE_USAGE_COOKIE", raising=False)
     monkeypatch.delenv("CLAUDE_USAGE_API_URL", raising=False)
 
@@ -60,7 +60,7 @@ def test_load_credentials_returns_cookie_and_url(monkeypatch, tmp_path):
 
 
 def test_load_credentials_raises_when_missing(monkeypatch, tmp_path):
-    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(config, "env_file_path", lambda: tmp_path / ".env")
     monkeypatch.delenv("CLAUDE_USAGE_COOKIE", raising=False)
     monkeypatch.delenv("CLAUDE_USAGE_API_URL", raising=False)
 
@@ -74,7 +74,7 @@ def test_load_credentials_picks_up_updated_env_file_without_restart(monkeypatch,
         "CLAUDE_USAGE_COOKIE=session=old\n"
         "CLAUDE_USAGE_API_URL=https://claude.ai/api/organizations/org/usage\n"
     )
-    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(config, "env_file_path", lambda: env_file)
     monkeypatch.delenv("CLAUDE_USAGE_COOKIE", raising=False)
     monkeypatch.delenv("CLAUDE_USAGE_API_URL", raising=False)
 
@@ -95,7 +95,7 @@ def test_load_credentials_prefers_shell_env_over_env_file(monkeypatch, tmp_path)
         "CLAUDE_USAGE_COOKIE=session=from-file\n"
         "CLAUDE_USAGE_API_URL=https://claude.ai/api/organizations/org/usage-from-file\n"
     )
-    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(config, "env_file_path", lambda: env_file)
     monkeypatch.setenv("CLAUDE_USAGE_COOKIE", "session=from-shell")
     monkeypatch.setenv(
         "CLAUDE_USAGE_API_URL", "https://claude.ai/api/organizations/org/usage-from-shell"
@@ -105,3 +105,12 @@ def test_load_credentials_prefers_shell_env_over_env_file(monkeypatch, tmp_path)
 
     assert cookie == "session=from-shell"
     assert api_url == "https://claude.ai/api/organizations/org/usage-from-shell"
+
+
+def test_env_file_path_ignores_cwd(monkeypatch, tmp_path):
+    monkeypatch.chdir(tmp_path)
+
+    result = config.env_file_path()
+
+    assert result.name == ".env"
+    assert result.parent.name == "claude-usage"

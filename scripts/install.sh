@@ -17,6 +17,7 @@ if [ ! -f .env ]; then
     cp .env.example .env
     echo "Opprettet .env fra .env.example — husk å fylle inn CLAUDE_USAGE_COOKIE og CLAUDE_USAGE_API_URL før du starter appen."
 fi
+chmod 600 .env
 
 echo "Installerer og starter LaunchAgent for autostart..."
 "$REPO_DIR/scripts/install_launch_agent.sh"

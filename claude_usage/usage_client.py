@@ -19,10 +19,15 @@ class UsageData:
 
 def fetch_usage(cookie: str, api_url: str) -> UsageData:
     try:
+        # claude.ai's usage-endepunkt er bak Cloudflares bot-beskyttelse,
+        # som blokkerer på TLS-fingerprint (JA3/JA4) uavhengig av om
+        # cookien er gyldig. curl_cffi med impersonate="chrome" etterligner
+        # Chromes TLS-fingerprint for å slippe gjennom — vanlig `requests`
+        # fungerer IKKE mot dette endepunktet, selv med korrekt cookie.
         response = requests.get(
             api_url, headers={"Cookie": cookie}, impersonate="chrome", timeout=10
         )
-    except requests.exceptions.RequestException as exc:
+    except requests.exceptions.CurlError as exc:
         raise UsageFetchError(f"Nettverksfeil ved henting av usage-data: {exc}") from exc
 
     if response.status_code in (401, 403):

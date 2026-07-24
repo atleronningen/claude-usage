@@ -9,8 +9,8 @@ from claude_usage.notifier import ThresholdNotifier
 from claude_usage.usage_client import UsageAuthError, UsageFetchError, fetch_usage
 
 REFRESH_INTERVAL_SECONDS = 60
-LAUNCH_AGENT_PLIST_PATH = Path.home() / "Library" / "LaunchAgents" / "com.atle.claude-usage.plist"
-LAUNCH_AGENT_LABEL = "com.atle.claude-usage"
+LAUNCH_AGENT_PLIST_PATH = Path.home() / "Library" / "LaunchAgents" / "local.claude-usage.plist"
+LAUNCH_AGENT_LABEL = "local.claude-usage"
 
 
 class ClaudeUsageApp(rumps.App):

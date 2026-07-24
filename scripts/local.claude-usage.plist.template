@@ -3,22 +3,22 @@
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>com.atle.claude-usage</string>
+    <string>local.claude-usage</string>
     <key>ProgramArguments</key>
     <array>
-        <string>/Users/atleronningen/Playground/claude-usage/venv/bin/python</string>
+        <string>__REPO_DIR__/venv/bin/python</string>
         <string>-m</string>
         <string>claude_usage.main</string>
     </array>
     <key>WorkingDirectory</key>
-    <string>/Users/atleronningen/Playground/claude-usage</string>
+    <string>__REPO_DIR__</string>
     <key>RunAtLoad</key>
     <true/>
     <key>KeepAlive</key>
     <false/>
     <key>StandardOutPath</key>
-    <string>/Users/atleronningen/Library/Logs/claude-usage.log</string>
+    <string>__HOME__/Library/Logs/claude-usage.log</string>
     <key>StandardErrorPath</key>
-    <string>/Users/atleronningen/Library/Logs/claude-usage.err.log</string>
+    <string>__HOME__/Library/Logs/claude-usage.err.log</string>
 </dict>
 </plist>

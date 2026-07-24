@@ -1,3 +1,5 @@
+import textwrap
+
 import rumps
 
 from claude_usage import config
@@ -57,8 +59,8 @@ class ClaudeUsageApp(rumps.App):
         )
 
     def _show_error(self, message: str) -> None:
-        self.title = "?"
-        self.error_item.title = message
+        self.title = "⚠️"
+        self.error_item.title = textwrap.fill(message, width=50)
 
 
 def main() -> None:

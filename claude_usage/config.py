@@ -3,7 +3,7 @@ import os
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-from dotenv import load_dotenv
+from dotenv import dotenv_values
 
 CONFIG_DIR = Path.home() / ".claude-usage"
 CONFIG_PATH = CONFIG_DIR / "config.json"
@@ -43,9 +43,9 @@ def save_settings(settings: Settings) -> None:
 
 def load_credentials() -> tuple[str, str]:
     env_path = Path.cwd() / ".env"
-    load_dotenv(dotenv_path=env_path)
-    cookie = os.environ.get("CLAUDE_USAGE_COOKIE")
-    api_url = os.environ.get("CLAUDE_USAGE_API_URL")
+    file_values = dotenv_values(env_path)
+    cookie = os.environ.get("CLAUDE_USAGE_COOKIE") or file_values.get("CLAUDE_USAGE_COOKIE")
+    api_url = os.environ.get("CLAUDE_USAGE_API_URL") or file_values.get("CLAUDE_USAGE_API_URL")
     if not cookie or not api_url:
         raise CredentialsMissingError(
             "CLAUDE_USAGE_COOKIE og CLAUDE_USAGE_API_URL må være satt i .env"

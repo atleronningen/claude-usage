@@ -66,3 +66,42 @@ def test_load_credentials_raises_when_missing(monkeypatch, tmp_path):
 
     with pytest.raises(config.CredentialsMissingError):
         config.load_credentials()
+
+
+def test_load_credentials_picks_up_updated_env_file_without_restart(monkeypatch, tmp_path):
+    env_file = tmp_path / ".env"
+    env_file.write_text(
+        "CLAUDE_USAGE_COOKIE=session=old\n"
+        "CLAUDE_USAGE_API_URL=https://claude.ai/api/organizations/org/usage\n"
+    )
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("CLAUDE_USAGE_COOKIE", raising=False)
+    monkeypatch.delenv("CLAUDE_USAGE_API_URL", raising=False)
+
+    cookie, _ = config.load_credentials()
+    assert cookie == "session=old"
+
+    env_file.write_text(
+        "CLAUDE_USAGE_COOKIE=session=new\n"
+        "CLAUDE_USAGE_API_URL=https://claude.ai/api/organizations/org/usage\n"
+    )
+    cookie, _ = config.load_credentials()
+    assert cookie == "session=new"
+
+
+def test_load_credentials_prefers_shell_env_over_env_file(monkeypatch, tmp_path):
+    env_file = tmp_path / ".env"
+    env_file.write_text(
+        "CLAUDE_USAGE_COOKIE=session=from-file\n"
+        "CLAUDE_USAGE_API_URL=https://claude.ai/api/organizations/org/usage-from-file\n"
+    )
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("CLAUDE_USAGE_COOKIE", "session=from-shell")
+    monkeypatch.setenv(
+        "CLAUDE_USAGE_API_URL", "https://claude.ai/api/organizations/org/usage-from-shell"
+    )
+
+    cookie, api_url = config.load_credentials()
+
+    assert cookie == "session=from-shell"
+    assert api_url == "https://claude.ai/api/organizations/org/usage-from-shell"

@@ -47,7 +47,5 @@ def load_credentials() -> tuple[str, str]:
     cookie = os.environ.get("CLAUDE_USAGE_COOKIE") or file_values.get("CLAUDE_USAGE_COOKIE")
     api_url = os.environ.get("CLAUDE_USAGE_API_URL") or file_values.get("CLAUDE_USAGE_API_URL")
     if not cookie or not api_url:
-        raise CredentialsMissingError(
-            "CLAUDE_USAGE_COOKIE og CLAUDE_USAGE_API_URL må være satt i .env"
-        )
+        raise CredentialsMissingError("Mangler cookie/API-URL i .env")
     return cookie, api_url

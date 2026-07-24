@@ -26,9 +26,7 @@ def fetch_usage(cookie: str, api_url: str) -> UsageData:
         raise UsageFetchError(f"Nettverksfeil ved henting av usage-data: {exc}") from exc
 
     if response.status_code in (401, 403):
-        raise UsageAuthError(
-            f"Autentisering feilet ({response.status_code}) — cookien er sannsynligvis utløpt"
-        )
+        raise UsageAuthError(f"Cookien er utløpt ({response.status_code})")
 
     try:
         response.raise_for_status()

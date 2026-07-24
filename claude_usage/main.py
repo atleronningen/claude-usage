@@ -1,5 +1,3 @@
-import textwrap
-
 import rumps
 
 from claude_usage import config
@@ -46,7 +44,7 @@ class ClaudeUsageApp(rumps.App):
             self._show_error(str(exc))
             return
         except UsageAuthError as exc:
-            self._show_error(f"{exc} — oppdater CLAUDE_USAGE_COOKIE i .env")
+            self._show_error(f"{exc} — oppdater .env")
             return
         except UsageFetchError as exc:
             self._show_error(str(exc))
@@ -60,7 +58,7 @@ class ClaudeUsageApp(rumps.App):
 
     def _show_error(self, message: str) -> None:
         self.title = "⚠️"
-        self.error_item.title = textwrap.fill(message, width=50)
+        self.error_item.title = message
 
 
 def main() -> None:

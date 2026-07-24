@@ -4,7 +4,7 @@ from pathlib import Path
 
 import rumps
 
-from claude_usage import config
+from claude_usage import __version__, config
 from claude_usage.notifier import ThresholdNotifier
 from claude_usage.usage_client import UsageAuthError, UsageFetchError, fetch_usage
 
@@ -30,6 +30,7 @@ class ClaudeUsageApp(rumps.App):
         )
         self.notifications_item.state = self.settings.notifications_enabled
         self.uninstall_item = rumps.MenuItem("Avinstaller", callback=self._uninstall)
+        self.version_item = rumps.MenuItem(f"v{__version__}", callback=None)
 
         self.menu = [
             self.error_item,
@@ -38,6 +39,8 @@ class ClaudeUsageApp(rumps.App):
             self.notifications_item,
             None,
             self.uninstall_item,
+            None,
+            self.version_item,
         ]
 
         self.timer = rumps.Timer(self.refresh, REFRESH_INTERVAL_SECONDS)

@@ -11,6 +11,11 @@ if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
 fi
 TAG="v$VERSION"
 
+if ! gh auth status >/dev/null 2>&1; then
+    echo "Feil: ikke logget inn med gh. Kjør 'gh auth login' først." >&2
+    exit 1
+fi
+
 if [ -n "$(git status --porcelain)" ]; then
     echo "Feil: arbeidstreet er ikke rent. Committ eller stash endringer først." >&2
     exit 1

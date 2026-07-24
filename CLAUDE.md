@@ -12,7 +12,7 @@ Python 3, rumps (menylinje-UI), requests, python-dotenv, pytest (dev).
 - Installer avhengigheter: `venv/bin/pip install -r requirements-dev.txt`
 - Kjør tester: `venv/bin/python -m pytest`
 - Kjør appen manuelt: `venv/bin/python -m claude_usage.main`
-- Full nyinstallasjon (venv + avhengigheter + .env + autostart): `./scripts/install.sh`
+- Full nyinstallasjon (venv + avhengigheter + .env + autostart): `./install` (peker til `scripts/install.sh`)
 - Installer autostart (LaunchAgent): `./scripts/install_launch_agent.sh`
 
 ## Struktur

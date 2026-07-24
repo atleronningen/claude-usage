@@ -3,7 +3,6 @@ dist/
 dev-dist/
 .env
 .env.local
-.env.*
 .firebase/
 *.log
 .DS_Store
@@ -12,3 +11,7 @@ dev-dist/
 credentials*.json
 service-account*.json
 secrets.json
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/

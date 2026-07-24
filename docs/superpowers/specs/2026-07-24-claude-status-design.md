@@ -1,6 +1,8 @@
-# Claude Status — design
+# Claude Usage — design
 
 Dato: 2026-07-24
+
+Mappenavn i Playground: `claude-status`.
 
 ## Formål
 

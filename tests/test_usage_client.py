@@ -1,3 +1,4 @@
+from datetime import datetime
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -44,7 +45,12 @@ def test_fetch_usage_parses_percentages(mock_get):
 
     usage = fetch_usage(cookie="session=abc", api_url=API_URL)
 
-    assert usage == UsageData(session_percent=62, weekly_percent=58)
+    assert usage == UsageData(
+        session_percent=62,
+        weekly_percent=58,
+        session_resets_at=datetime.fromisoformat("2026-07-24T21:09:59.018485+00:00"),
+        weekly_resets_at=datetime.fromisoformat("2026-07-28T19:59:59.018510+00:00"),
+    )
     mock_get.assert_called_once_with(
         API_URL, headers={"Cookie": "session=abc"}, impersonate="chrome", timeout=10
     )
@@ -58,7 +64,50 @@ def test_fetch_usage_rounds_float_percentages(mock_get):
 
     usage = fetch_usage(cookie="session=abc", api_url=API_URL)
 
-    assert usage == UsageData(session_percent=62, weekly_percent=58)
+    assert usage == UsageData(
+        session_percent=62,
+        weekly_percent=58,
+        session_resets_at=datetime.fromisoformat("2026-07-24T21:09:59.018485+00:00"),
+        weekly_resets_at=datetime.fromisoformat("2026-07-28T19:59:59.018510+00:00"),
+    )
+
+
+@patch("claude_usage.usage_client.requests.get")
+def test_fetch_usage_parses_reset_timestamps(mock_get):
+    mock_get.return_value = _mock_response(200, _sample_response())
+
+    usage = fetch_usage(cookie="session=abc", api_url=API_URL)
+
+    assert usage.session_resets_at == datetime.fromisoformat(
+        "2026-07-24T21:09:59.018485+00:00"
+    )
+    assert usage.weekly_resets_at == datetime.fromisoformat(
+        "2026-07-28T19:59:59.018510+00:00"
+    )
+
+
+@patch("claude_usage.usage_client.requests.get")
+def test_fetch_usage_handles_missing_resets_at(mock_get):
+    response = _sample_response()
+    del response["five_hour"]["resets_at"]
+    del response["seven_day"]["resets_at"]
+    mock_get.return_value = _mock_response(200, response)
+
+    usage = fetch_usage(cookie="session=abc", api_url=API_URL)
+
+    assert usage.session_resets_at is None
+    assert usage.weekly_resets_at is None
+
+
+@patch("claude_usage.usage_client.requests.get")
+def test_fetch_usage_handles_invalid_resets_at(mock_get):
+    response = _sample_response()
+    response["five_hour"]["resets_at"] = "not-a-date"
+    mock_get.return_value = _mock_response(200, response)
+
+    usage = fetch_usage(cookie="session=abc", api_url=API_URL)
+
+    assert usage.session_resets_at is None
 
 
 @patch("claude_usage.usage_client.requests.get")

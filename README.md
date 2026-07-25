@@ -7,7 +7,7 @@ En liten macOS-menylinje-app som viser hvor mye av Claude.ai-abonnementet
 ukentlige grensen, oppdatert hvert minutt.
 
 ```
-S:40% U:15%
+43 · 76
 ```
 
 Kjøres fra kildekode via et lokalt Python-virtualenv — ikke pakket eller
@@ -66,9 +66,12 @@ og viser samme oppskrift som over.
 
 ## Bruk
 
-- **Menylinjen** viser session- og ukeprosent side ved side, eller ⚠️
-  ved feil (utløpt cookie, nettverksfeil e.l.)
-- **Oppdater nå** — henter fersk status med én gang
+- **Menylinjen** viser sesjon- og uke-forbruk side ved side (f.eks. `43 · 76`),
+  med `!` bak et tall som har passert 90 %, eller ⚠️ ved feil (utløpt cookie,
+  nettverksfeil e.l.)
+- **Dropdown-menyen** viser begge grensene som tekstmålere
+  (`Sesjon  ▰▰▰▰▱▱▱▱▱▱ 43%`) med nullstillingstidspunkt under hver, appen
+  oppdaterer seg selv hvert minutt
 - **Varsle ved 90%** — av/på-bryter for macOS-notifikasjon når en
   grense nærmer seg fullt brukt
 - **Avinstaller** — fjerner LaunchAgent-en, app-ikonet og lagrede

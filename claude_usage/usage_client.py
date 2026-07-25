@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
+from datetime import datetime
 
 from curl_cffi import requests
 
@@ -15,6 +18,8 @@ class UsageFetchError(Exception):
 class UsageData:
     session_percent: int
     weekly_percent: int
+    session_resets_at: datetime | None
+    weekly_resets_at: datetime | None
 
 
 def fetch_usage(cookie: str, api_url: str) -> UsageData:
@@ -48,4 +53,19 @@ def fetch_usage(cookie: str, api_url: str) -> UsageData:
 def _parse_usage(data: dict) -> UsageData:
     session_percent = round(data["five_hour"]["utilization"])
     weekly_percent = round(data["seven_day"]["utilization"])
-    return UsageData(session_percent=session_percent, weekly_percent=weekly_percent)
+    return UsageData(
+        session_percent=session_percent,
+        weekly_percent=weekly_percent,
+        session_resets_at=_parse_resets_at(data["five_hour"]),
+        weekly_resets_at=_parse_resets_at(data["seven_day"]),
+    )
+
+
+def _parse_resets_at(section: dict) -> datetime | None:
+    raw = section.get("resets_at")
+    if not raw:
+        return None
+    try:
+        return datetime.fromisoformat(raw)
+    except (TypeError, ValueError):
+        return None

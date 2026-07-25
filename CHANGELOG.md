@@ -15,6 +15,17 @@ og prosjektet følger [semantisk versjonering](https://semver.org/lang/nb/).
 ### Changed
 - README oppdatert til å reflektere at appen kan installeres av andre enn
   Atle, ikke bare til rent personlig bruk
+- Menylinjetittel forkortet til `sesjon · uke` (uten `%`), med `!`-markør
+  ved ≥ 90 % — se `docs/design_handoff_menubar_1b/`
+- Dropdown-menyen viser nå sesjon- og ukeforbruk som tekstmålere med
+  nullstillingstidspunkt, i stedet for kun i menylinjetittelen
+- Feiltilstanden viser siste kjente tall (uten nullstillingstidspunkt) i
+  stedet for å skjule dem helt
+- Footeren viser nå tidspunkt for siste vellykkede oppdatering sammen med
+  versjonsnummeret (`Oppdatert 14:03 · App v0.1.0`)
+
+### Removed
+- «Oppdater nå»-menyvalget (appen oppdaterer seg selv hvert 60. sekund)
 
 ## [0.1.0] - 2026-07-25
 

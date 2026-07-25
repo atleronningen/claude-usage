@@ -114,6 +114,43 @@ def test_error_state_with_prior_data_shows_stale_meters_without_resets():
     assert app.footer_item.title.startswith("Oppdatert ")
 
 
+def test_normal_state_meter_items_are_not_dimmed():
+    """Målerlinjene («Sesjon 43%») skal se ut som fullvekt/mørk tekst i
+    normaltilstand — det krever en reell callback, siden rumps grår ut
+    ethvert MenuItem med callback=None (dokumentert i rumps.set_callback)."""
+    with patch("claude_usage.main.config.load_credentials", return_value=("c", "u")), \
+         patch("claude_usage.main.fetch_usage", return_value=_usage()):
+        app = ClaudeUsageApp()
+
+    assert app.session_meter_item.callback is not None
+    assert app.weekly_meter_item.callback is not None
+    # Nullstillingslinjer og footer skal derimot alltid være dempet
+    assert app.session_reset_item.callback is None
+    assert app.weekly_reset_item.callback is None
+    assert app.footer_item.callback is None
+
+
+def test_error_state_meter_items_are_dimmed():
+    """I feiltilstand (gamle tall) skal målerlinjene se dempet ut, i
+    kontrast til normaltilstand."""
+    responses = [_usage()]
+
+    def fetch_side_effect(*args, **kwargs):
+        if responses:
+            return responses.pop()
+        raise UsageAuthError("expired")
+
+    with patch("claude_usage.main.config.load_credentials", return_value=("c", "u")), \
+         patch("claude_usage.main.fetch_usage", side_effect=fetch_side_effect):
+        app = ClaudeUsageApp()
+        assert app.session_meter_item.callback is not None  # normaltilstand: ikke dempet
+
+        app.refresh(None)  # andre kall: responses er tom, kaster UsageAuthError
+
+    assert app.session_meter_item.callback is None
+    assert app.weekly_meter_item.callback is None
+
+
 @pytest.mark.parametrize(
     "session, weekly, expected",
     [

@@ -184,8 +184,10 @@ class ClaudeUsageApp(rumps.App):
     def _render_data_items(self, usage: UsageData, now: datetime) -> None:
         self.session_meter_item.hidden = False
         self.session_meter_item.title = format_meter("Sesjon", usage.session_percent, THRESHOLD_PERCENT)
+        self.session_meter_item.set_callback(self._noop)
         self.weekly_meter_item.hidden = False
         self.weekly_meter_item.title = format_meter("Uke", usage.weekly_percent, THRESHOLD_PERCENT)
+        self.weekly_meter_item.set_callback(self._noop)
 
         session_reset = format_reset(usage.session_resets_at, now)
         self.session_reset_item.hidden = session_reset is None
@@ -202,18 +204,26 @@ class ClaudeUsageApp(rumps.App):
     def _render_data_items_compact(self, usage: UsageData) -> None:
         self.session_meter_item.hidden = False
         self.session_meter_item.title = format_meter("Sesjon", usage.session_percent, THRESHOLD_PERCENT)
+        self.session_meter_item.set_callback(None)
         self.weekly_meter_item.hidden = False
         self.weekly_meter_item.title = format_meter("Uke", usage.weekly_percent, THRESHOLD_PERCENT)
+        self.weekly_meter_item.set_callback(None)
         self.session_reset_item.hidden = True
         self.weekly_reset_item.hidden = True
         self.mid_separator._menuitem.setHidden_(True)
 
     def _hide_data_items(self) -> None:
         self.session_meter_item.hidden = True
+        self.session_meter_item.set_callback(None)
         self.session_reset_item.hidden = True
         self.weekly_meter_item.hidden = True
+        self.weekly_meter_item.set_callback(None)
         self.weekly_reset_item.hidden = True
         self.mid_separator._menuitem.setHidden_(True)
+
+    @staticmethod
+    def _noop(_sender) -> None:
+        return None
 
     def _uninstall(self, _sender) -> None:
         response = rumps.alert(

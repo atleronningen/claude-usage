@@ -41,17 +41,3 @@ menylinjens dropdown-meny.
   Release. Krever rent arbeidstre og at `main` er oppdatert med
   `origin/main`.
 - Rollback: `git checkout vX.Y.Z` og restart appen.
-
-## Skjermbilde ved UI-endringer
-
-`README.md` viser et ekte skjermbilde av dropdown-menyen i
-normaltilstand: `docs/screenshots/menylinje.png`.
-
-Når en endring påvirker hvordan menylinjen eller dropdown-menyen ser
-ut, skal Claude som siste steg før commit minne Atle på å ta et nytt
-skjermbilde:
-
-1. Kjør appen og åpne dropdown-menyen i normaltilstand
-2. Ta skjermbilde med `⌘+⇧+4` → mellomrom → klikk på vinduet
-3. Lim bildet inn i chatten
-4. Claude kopierer filen til `docs/screenshots/menylinje.png` med `cp`

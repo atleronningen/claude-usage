@@ -12,6 +12,7 @@ from claude_usage.main import (
     format_reset,
     format_title,
 )
+from claude_usage.usage_client import UsageAuthError, UsageData
 
 NOW = datetime(2026, 7, 24, 12, 33, 0, tzinfo=timezone.utc)
 
@@ -20,14 +21,97 @@ def _local_clock(dt: datetime) -> str:
     return f"{dt.astimezone():%H:%M}"
 
 
-def test_menu_shows_version():
+def test_footer_shows_version():
     with patch(
         "claude_usage.main.config.load_credentials",
         side_effect=CredentialsMissingError("mangler"),
     ):
         app = ClaudeUsageApp()
 
-    assert app.version_item.title == f"v{__version__}"
+    assert app.footer_item.title == f"App v{__version__}"
+
+
+def _usage(session=43, weekly=76, session_resets=None, weekly_resets=None):
+    return UsageData(
+        session_percent=session,
+        weekly_percent=weekly,
+        session_resets_at=session_resets,
+        weekly_resets_at=weekly_resets,
+    )
+
+
+def test_normal_state_shows_data_and_hides_error():
+    with patch("claude_usage.main.config.load_credentials", return_value=("c", "u")), \
+         patch("claude_usage.main.fetch_usage", return_value=_usage()):
+        app = ClaudeUsageApp()
+
+    assert app.title == "43 · 76"
+    assert app.error_item.hidden is True
+    assert app.help_item.hidden is True
+    assert app.session_meter_item.hidden is False
+    assert app.session_meter_item.title.startswith("Sesjon")
+    assert app.weekly_meter_item.hidden is False
+    assert app.footer_item.title.startswith("Oppdatert ")
+    assert app.footer_item.title.endswith(f"App v{__version__}")
+
+
+def test_normal_state_hides_reset_line_when_resets_at_missing():
+    with patch("claude_usage.main.config.load_credentials", return_value=("c", "u")), \
+         patch("claude_usage.main.fetch_usage", return_value=_usage()):
+        app = ClaudeUsageApp()
+
+    assert app.session_reset_item.hidden is True
+    assert app.weekly_reset_item.hidden is True
+
+
+def test_threshold_crossed_marks_title_and_meter():
+    with patch("claude_usage.main.config.load_credentials", return_value=("c", "u")), \
+         patch("claude_usage.main.fetch_usage", return_value=_usage(weekly=92)):
+        app = ClaudeUsageApp()
+
+    assert app.title == "43 · 92!"
+    assert app.weekly_meter_item.title.endswith("92%!")
+
+
+def test_error_state_before_any_fetch_hides_all_data_lines():
+    with patch(
+        "claude_usage.main.config.load_credentials",
+        side_effect=CredentialsMissingError("mangler"),
+    ):
+        app = ClaudeUsageApp()
+
+    assert app.title == "⚠️"
+    assert app.error_item.hidden is False
+    assert app.error_item.title == "mangler"
+    assert app.help_item.hidden is True
+    assert app.session_meter_item.hidden is True
+    assert app.weekly_meter_item.hidden is True
+    assert app.footer_item.title == f"App v{__version__}"
+
+
+def test_error_state_with_prior_data_shows_stale_meters_without_resets():
+    responses = [_usage(session_resets=datetime.now(timezone.utc) + timedelta(hours=1))]
+
+    def fetch_side_effect(*args, **kwargs):
+        if responses:
+            return responses.pop()
+        raise UsageAuthError("expired")
+
+    with patch("claude_usage.main.config.load_credentials", return_value=("c", "u")), \
+         patch("claude_usage.main.fetch_usage", side_effect=fetch_side_effect):
+        app = ClaudeUsageApp()
+        assert app.session_reset_item.hidden is False  # sanity check før feilen inntreffer
+
+        app.refresh(None)  # andre kall: responses er tom, kaster UsageAuthError
+
+    assert app.title == "⚠️"
+    assert app.error_item.hidden is False
+    assert app.error_item.title == "Cookien utløpt – oppdater"
+    assert app.help_item.hidden is False
+    assert app.help_item.title.startswith("Klikk for oppskrift · siste tall ")
+    assert app.session_meter_item.hidden is False  # gamle tall vises fortsatt
+    assert app.session_reset_item.hidden is True  # men uten nullstillingslinje
+    assert app.footer_item.title.startswith("Oppdatert ")
 
 
 @pytest.mark.parametrize(

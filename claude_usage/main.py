@@ -68,29 +68,55 @@ class ClaudeUsageApp(rumps.App):
         super().__init__(
             "Claude Usage",
             title="…",
-            quit_button=rumps.MenuItem("Avslutt"),
+            quit_button=None,
         )
         self.settings = config.load_settings()
         self.notifier = ThresholdNotifier()
+        self._last_usage: UsageData | None = None
+        self._last_updated_at: datetime | None = None
 
-        self.error_item = rumps.MenuItem("Ingen feil", callback=None)
-        self.refresh_item = rumps.MenuItem("Oppdater nå", callback=self.refresh)
+        self.error_item = rumps.MenuItem("Feil", callback=None)
+        self.error_item.hidden = True
+        self.help_item = rumps.MenuItem("Hjelp", callback=None)
+        self.help_item.hidden = True
+        self.top_separator = rumps.rumps.SeparatorMenuItem()
+        self.top_separator._menuitem.setHidden_(True)
+
+        self.session_meter_item = rumps.MenuItem("Sesjon-måler", callback=None)
+        self.session_meter_item.hidden = True
+        self.session_reset_item = rumps.MenuItem("Sesjon-nullstilling", callback=None)
+        self.session_reset_item.hidden = True
+        self.mid_separator = rumps.rumps.SeparatorMenuItem()
+        self.mid_separator._menuitem.setHidden_(True)
+        self.weekly_meter_item = rumps.MenuItem("Uke-måler", callback=None)
+        self.weekly_meter_item.hidden = True
+        self.weekly_reset_item = rumps.MenuItem("Uke-nullstilling", callback=None)
+        self.weekly_reset_item.hidden = True
+
         self.notifications_item = rumps.MenuItem(
             "Varsle ved 90%", callback=self._toggle_notifications
         )
         self.notifications_item.state = self.settings.notifications_enabled
         self.uninstall_item = rumps.MenuItem("Avinstaller", callback=self._uninstall)
-        self.version_item = rumps.MenuItem(f"v{__version__}", callback=None)
+        self.quit_item = rumps.MenuItem("Avslutt", callback=rumps.quit_application)
+        self.footer_item = rumps.MenuItem(format_footer(__version__, None), callback=None)
 
         self.menu = [
             self.error_item,
+            self.help_item,
+            self.top_separator,
+            self.session_meter_item,
+            self.session_reset_item,
+            self.mid_separator,
+            self.weekly_meter_item,
+            self.weekly_reset_item,
             None,
-            self.refresh_item,
             self.notifications_item,
             None,
             self.uninstall_item,
+            self.quit_item,
             None,
-            self.version_item,
+            self.footer_item,
         ]
 
         self.timer = rumps.Timer(self.refresh, REFRESH_INTERVAL_SECONDS)
@@ -120,17 +146,74 @@ class ClaudeUsageApp(rumps.App):
             self._show_error(f"Uventet feil: {exc}", actionable=False)
             return
 
-        self.title = f"S:{usage.session_percent}% U:{usage.weekly_percent}%"
-        self.error_item.title = "Ingen feil"
-        self.error_item.set_callback(None)
+        now = datetime.now(timezone.utc)
+        self._last_usage = usage
+        self._last_updated_at = now
+
+        self.title = format_title(usage.session_percent, usage.weekly_percent, THRESHOLD_PERCENT)
+        self.error_item.hidden = True
+        self.help_item.hidden = True
+        self.top_separator._menuitem.setHidden_(True)
+        self._render_data_items(usage, now)
+        self.footer_item.title = format_footer(__version__, now)
+
         self.notifier.check(
             usage.session_percent, usage.weekly_percent, self.settings.notifications_enabled
         )
 
     def _show_error(self, message: str, actionable: bool = False) -> None:
         self.title = "⚠️"
+        self.error_item.hidden = False
         self.error_item.title = message
         self.error_item.set_callback(self._show_help if actionable else None)
+
+        if self._last_usage is None:
+            self.help_item.hidden = True
+            self.top_separator._menuitem.setHidden_(True)
+            self._hide_data_items()
+        else:
+            updated_str = f"{self._last_updated_at.astimezone():%H:%M}"
+            prefix = "Klikk for oppskrift · " if actionable else ""
+            self.help_item.title = f"{prefix}siste tall {updated_str}"
+            self.help_item.hidden = False
+            self.top_separator._menuitem.setHidden_(False)
+            self._render_data_items_compact(self._last_usage)
+
+        self.footer_item.title = format_footer(__version__, self._last_updated_at)
+
+    def _render_data_items(self, usage: UsageData, now: datetime) -> None:
+        self.session_meter_item.hidden = False
+        self.session_meter_item.title = format_meter("Sesjon", usage.session_percent, THRESHOLD_PERCENT)
+        self.weekly_meter_item.hidden = False
+        self.weekly_meter_item.title = format_meter("Uke", usage.weekly_percent, THRESHOLD_PERCENT)
+
+        session_reset = format_reset(usage.session_resets_at, now)
+        self.session_reset_item.hidden = session_reset is None
+        if session_reset is not None:
+            self.session_reset_item.title = session_reset
+
+        weekly_reset = format_reset(usage.weekly_resets_at, now)
+        self.weekly_reset_item.hidden = weekly_reset is None
+        if weekly_reset is not None:
+            self.weekly_reset_item.title = weekly_reset
+
+        self.mid_separator._menuitem.setHidden_(False)
+
+    def _render_data_items_compact(self, usage: UsageData) -> None:
+        self.session_meter_item.hidden = False
+        self.session_meter_item.title = format_meter("Sesjon", usage.session_percent, THRESHOLD_PERCENT)
+        self.weekly_meter_item.hidden = False
+        self.weekly_meter_item.title = format_meter("Uke", usage.weekly_percent, THRESHOLD_PERCENT)
+        self.session_reset_item.hidden = True
+        self.weekly_reset_item.hidden = True
+        self.mid_separator._menuitem.setHidden_(True)
+
+    def _hide_data_items(self) -> None:
+        self.session_meter_item.hidden = True
+        self.session_reset_item.hidden = True
+        self.weekly_meter_item.hidden = True
+        self.weekly_reset_item.hidden = True
+        self.mid_separator._menuitem.setHidden_(True)
 
     def _uninstall(self, _sender) -> None:
         response = rumps.alert(
@@ -178,7 +261,7 @@ class ClaudeUsageApp(rumps.App):
                 "3. Last siden på nytt, klikk på \"usage\"-forespørselen\n"
                 "4. Under Headers → Request Headers: kopier hele Cookie-verdien\n"
                 "5. Lim inn i CLAUDE_USAGE_COOKIE i .env-filen som nettopp åpnet seg\n"
-                "6. Lagre filen, og klikk \"Oppdater nå\" i menyen"
+                "6. Lagre filen — appen henter automatisk på nytt innen ett minutt"
             ),
         )
 

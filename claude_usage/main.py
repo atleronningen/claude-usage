@@ -11,6 +11,7 @@ from claude_usage.usage_client import UsageAuthError, UsageFetchError, fetch_usa
 REFRESH_INTERVAL_SECONDS = 60
 LAUNCH_AGENT_PLIST_PATH = Path.home() / "Library" / "LaunchAgents" / "local.claude-usage.plist"
 LAUNCH_AGENT_LABEL = "local.claude-usage"
+APP_BUNDLE_PATH = Path.home() / "Applications" / "Claude Usage.app"
 
 
 class ClaudeUsageApp(rumps.App):
@@ -86,9 +87,9 @@ class ClaudeUsageApp(rumps.App):
         response = rumps.alert(
             title="Avinstaller Claude Usage",
             message=(
-                "Dette fjerner autostart-oppsettet (LaunchAgent) og lagrede "
-                "innstillinger. Prosjektmappen og .env beholdes. Appen "
-                "avsluttes etterpå."
+                "Dette fjerner autostart-oppsettet (LaunchAgent), app-ikonet "
+                "i ~/Applications, og lagrede innstillinger. Prosjektmappen "
+                "og .env beholdes. Appen avsluttes etterpå."
             ),
             ok="Avinstaller",
             cancel="Avbryt",
@@ -100,12 +101,15 @@ class ClaudeUsageApp(rumps.App):
         if plist_existed:
             LAUNCH_AGENT_PLIST_PATH.unlink()
 
+        if APP_BUNDLE_PATH.exists():
+            shutil.rmtree(APP_BUNDLE_PATH)
+
         if config.CONFIG_DIR.exists():
             shutil.rmtree(config.CONFIG_DIR)
 
         rumps.alert(
             title="Avinstallert",
-            message="LaunchAgent og lagrede innstillinger er fjernet.",
+            message="LaunchAgent, app-ikon og lagrede innstillinger er fjernet.",
         )
 
         if plist_existed:

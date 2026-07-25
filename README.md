@@ -71,8 +71,14 @@ og viser samme oppskrift som over.
 - **Oppdater nå** — henter fersk status med én gang
 - **Varsle ved 90%** — av/på-bryter for macOS-notifikasjon når en
   grense nærmer seg fullt brukt
-- **Avinstaller** — fjerner LaunchAgent-en og lagrede innstillinger
-  (spør om bekreftelse først; selve prosjektmappen og `.env` beholdes)
+- **Avinstaller** — fjerner LaunchAgent-en, app-ikonet og lagrede
+  innstillinger (spør om bekreftelse først; selve prosjektmappen og
+  `.env` beholdes)
+
+`./install` legger også `Claude Usage.app` i `~/Applications`. Hvis appen
+skulle forsvinne fra menylinjen (f.eks. etter «Avslutt»), finner du den
+igjen i Launchpad eller Spotlight — et klikk på ikonet starter den på
+nytt.
 
 ## Utvikling
 

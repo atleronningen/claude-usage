@@ -9,6 +9,8 @@ og prosjektet følger [semantisk versjonering](https://semver.org/lang/nb/).
 
 ### Added
 - MIT-lisens
+- App-ikon i `~/Applications` (installert automatisk av `./install`) for å
+  starte appen på nytt uten terminal hvis den forsvinner fra menylinjen
 
 ### Changed
 - README oppdatert til å reflektere at appen kan installeres av andre enn

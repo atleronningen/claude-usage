@@ -22,4 +22,7 @@ chmod 600 .env
 echo "Installerer og starter LaunchAgent for autostart..."
 "$REPO_DIR/scripts/install_launch_agent.sh"
 
+echo "Installerer app-ikon i ~/Applications..."
+"$REPO_DIR/scripts/install_app_icon.sh"
+
 echo "Ferdig. Appen kjører nå og starter automatisk ved fremtidig pålogging."

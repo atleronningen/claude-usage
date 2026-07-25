@@ -7,6 +7,8 @@ og prosjektet følger [semantisk versjonering](https://semver.org/lang/nb/).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-07-25
+
 ### Added
 - MIT-lisens
 - App-ikon i `~/Applications` (installert automatisk av `./install`) for å

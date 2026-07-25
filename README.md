@@ -6,9 +6,7 @@ En liten macOS-menylinje-app som viser hvor mye av Claude.ai-abonnementet
 (Pro/Max) du har brukt opp — både session-grensen (5 timer) og den
 ukentlige grensen, oppdatert hvert minutt.
 
-```
-43 · 76
-```
+![Claude Usage-menyen](docs/screenshots/menylinje.png)
 
 Kjøres fra kildekode via et lokalt Python-virtualenv — ikke pakket eller
 signert som en frittstående macOS-app.

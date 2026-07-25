@@ -7,6 +7,10 @@ og prosjektet følger [semantisk versjonering](https://semver.org/lang/nb/).
 
 ## [Unreleased]
 
+### Changed
+- README viser nå et ekte skjermbilde av dropdown-menyen i stedet for en
+  tekstboks
+
 ## [0.2.0] - 2026-07-25
 
 ### Added

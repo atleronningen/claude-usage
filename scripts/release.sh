@@ -51,38 +51,39 @@ from datetime import date
 
 version, notes_path = sys.argv[1], sys.argv[2]
 
+# Step 1: Read all files
 changelog_path = "CHANGELOG.md"
 with open(changelog_path) as f:
-    content = f.read()
+    changelog_content = f.read()
 
+init_path = "claude_usage/__init__.py"
+with open(init_path) as f:
+    init_content = f.read()
+
+# Step 2: Validate everything before writing anything to disk
 unreleased_heading = "## [Unreleased]"
-start = content.find(unreleased_heading)
+start = changelog_content.find(unreleased_heading)
 if start == -1:
     sys.exit("Feil: fant ikke '## [Unreleased]' i CHANGELOG.md")
 
 body_start = start + len(unreleased_heading)
-next_heading = content.find("\n## [", body_start)
-body = content[body_start:next_heading if next_heading != -1 else len(content)]
+next_heading = changelog_content.find("\n## [", body_start)
+body = changelog_content[body_start:next_heading if next_heading != -1 else len(changelog_content)]
 body = body.strip("\n")
 
 if not body.strip():
     sys.exit("Feil: '## [Unreleased]' i CHANGELOG.md er tom. Legg til endringer før release.")
 
+# Validate __version__ line exists BEFORE attempting substitution
+if not re.search(r'^__version__ = ".*"$', init_content, flags=re.MULTILINE):
+    sys.exit(f"Feil: fant ikke __version__-linje i {init_path}")
+
+# Step 3: Compute new content
 today = date.today().isoformat()
 new_section = f"{unreleased_heading}\n\n## [{version}] - {today}\n\n{body}\n"
 
-rest = content[next_heading:] if next_heading != -1 else ""
-new_content = content[:start] + new_section + ("\n" if rest else "") + rest.lstrip("\n")
-
-with open(changelog_path, "w") as f:
-    f.write(new_content)
-
-with open(notes_path, "w") as f:
-    f.write(f"## [{version}] - {today}\n\n{body}\n")
-
-init_path = "claude_usage/__init__.py"
-with open(init_path) as f:
-    init_content = f.read()
+rest = changelog_content[next_heading:] if next_heading != -1 else ""
+new_changelog_content = changelog_content[:start] + new_section + ("\n" if rest else "") + rest.lstrip("\n")
 
 new_init_content = re.sub(
     r'^__version__ = ".*"$',
@@ -90,8 +91,13 @@ new_init_content = re.sub(
     init_content,
     flags=re.MULTILINE,
 )
-if new_init_content == init_content:
-    sys.exit(f"Feil: fant ikke __version__-linje i {init_path}")
+
+# Step 4: Write all files (all-or-nothing after validation is complete)
+with open(changelog_path, "w") as f:
+    f.write(new_changelog_content)
+
+with open(notes_path, "w") as f:
+    f.write(f"## [{version}] - {today}\n\n{body}\n")
 
 with open(init_path, "w") as f:
     f.write(new_init_content)
@@ -100,8 +106,7 @@ PYEOF
 git add CHANGELOG.md claude_usage/__init__.py
 git commit -m "Release $TAG"
 git tag "$TAG"
-git push origin main
-git push origin "$TAG"
+git push --atomic origin main "$TAG"
 gh release create "$TAG" --title "$TAG" --notes-file "$NOTES_FILE"
 
 echo "Ferdig: $TAG er tagget, pushet og publisert som GitHub Release."

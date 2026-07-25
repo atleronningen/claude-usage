@@ -1,17 +1,66 @@
+from __future__ import annotations
+
 import shutil
 import subprocess
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import rumps
 
 from claude_usage import __version__, config
-from claude_usage.notifier import ThresholdNotifier
-from claude_usage.usage_client import UsageAuthError, UsageFetchError, fetch_usage
+from claude_usage.notifier import THRESHOLD_PERCENT, ThresholdNotifier
+from claude_usage.usage_client import UsageAuthError, UsageData, UsageFetchError, fetch_usage
 
 REFRESH_INTERVAL_SECONDS = 60
 LAUNCH_AGENT_PLIST_PATH = Path.home() / "Library" / "LaunchAgents" / "local.claude-usage.plist"
 LAUNCH_AGENT_LABEL = "local.claude-usage"
 APP_BUNDLE_PATH = Path.home() / "Applications" / "Claude Usage.app"
+
+METER_CELLS = 10
+METER_FILLED = "▰"
+METER_EMPTY = "▱"
+WEEKDAY_ABBREVIATIONS = ["man", "tir", "ons", "tor", "fre", "lør", "søn"]
+
+
+def format_title(session: int, weekly: int, threshold: int) -> str:
+    session_str = f"{session}!" if session >= threshold else f"{session}"
+    weekly_str = f"{weekly}!" if weekly >= threshold else f"{weekly}"
+    return f"{session_str} · {weekly_str}"
+
+
+def format_meter(label: str, percent: int, threshold: int) -> str:
+    filled = max(0, min(METER_CELLS, round(percent / 10)))
+    bar = METER_FILLED * filled + METER_EMPTY * (METER_CELLS - filled)
+    suffix = "!" if percent >= threshold else ""
+    return f"{label:<7}{bar} {percent}%{suffix}"
+
+
+def format_reset(resets_at: datetime | None, now: datetime) -> str | None:
+    if resets_at is None:
+        return None
+
+    local = resets_at.astimezone()
+    delta = resets_at - now
+
+    if delta <= timedelta(minutes=1):
+        return f"Nullstilles {local:%H:%M} (nå)"
+    if delta < timedelta(hours=1):
+        minutes = int(delta.total_seconds() // 60)
+        return f"Nullstilles {local:%H:%M} (om {minutes} min)"
+    if delta < timedelta(hours=24):
+        total_minutes = int(delta.total_seconds() // 60)
+        hours, minutes = divmod(total_minutes, 60)
+        return f"Nullstilles {local:%H:%M} (om {hours} t {minutes} min)"
+
+    weekday = WEEKDAY_ABBREVIATIONS[local.weekday()]
+    days = round(delta.total_seconds() / 86400)
+    return f"Nullstilles {weekday} {local:%H:%M} (om {days} d)"
+
+
+def format_footer(version: str, updated_at: datetime | None) -> str:
+    if updated_at is None:
+        return f"App v{version}"
+    return f"Oppdatert {updated_at.astimezone():%H:%M} · App v{version}"
 
 
 class ClaudeUsageApp(rumps.App):

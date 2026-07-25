@@ -22,8 +22,7 @@ usage-API er bak Cloudflare-beskyttelse som blokkerer på TLS-fingerprint
 ## Struktur
 
 - `claude_usage/usage_client.py` — henter og parser usage-data fra claude.ai
-- `claude_usage/config.py` — credentials (.env) og persisterte innstillinger (`~/.claude-usage/config.json`)
-- `claude_usage/notifier.py` — terskelvarsling ved 90%
+- `claude_usage/config.py` — credentials (.env)
 - `claude_usage/main.py` — rumps-appen (menylinje-UI)
 - `scripts/` — LaunchAgent-plist og installasjonsskript
 - `.env` (gitignored) — `CLAUDE_USAGE_COOKIE` og `CLAUDE_USAGE_API_URL`, se `.env.example`

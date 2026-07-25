@@ -26,6 +26,9 @@ og prosjektet følger [semantisk versjonering](https://semver.org/lang/nb/).
 
 ### Removed
 - «Oppdater nå»-menyvalget (appen oppdaterer seg selv hvert 60. sekund)
+- «Varsle ved 90%»-varslingen — samme terskel vises allerede tydelig andre
+  steder (`!`-markør i tittel og målere), så en egen push-notifikasjon var
+  overflødig
 
 ## [0.1.0] - 2026-07-25
 

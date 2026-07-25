@@ -8,13 +8,13 @@ from pathlib import Path
 import rumps
 
 from claude_usage import __version__, config
-from claude_usage.notifier import THRESHOLD_PERCENT, ThresholdNotifier
 from claude_usage.usage_client import UsageAuthError, UsageData, UsageFetchError, fetch_usage
 
 REFRESH_INTERVAL_SECONDS = 60
 LAUNCH_AGENT_PLIST_PATH = Path.home() / "Library" / "LaunchAgents" / "local.claude-usage.plist"
 LAUNCH_AGENT_LABEL = "local.claude-usage"
 APP_BUNDLE_PATH = Path.home() / "Applications" / "Claude Usage.app"
+THRESHOLD_PERCENT = 90
 
 METER_CELLS = 10
 METER_FILLED = "▰"
@@ -70,8 +70,6 @@ class ClaudeUsageApp(rumps.App):
             title="…",
             quit_button=None,
         )
-        self.settings = config.load_settings()
-        self.notifier = ThresholdNotifier()
         self._last_usage: UsageData | None = None
         self._last_updated_at: datetime | None = None
 
@@ -93,10 +91,6 @@ class ClaudeUsageApp(rumps.App):
         self.weekly_reset_item = rumps.MenuItem("Uke-nullstilling", callback=None)
         self.weekly_reset_item.hidden = True
 
-        self.notifications_item = rumps.MenuItem(
-            "Varsle ved 90%", callback=self._toggle_notifications
-        )
-        self.notifications_item.state = self.settings.notifications_enabled
         self.uninstall_item = rumps.MenuItem("Avinstaller", callback=self._uninstall)
         self.quit_item = rumps.MenuItem("Avslutt", callback=rumps.quit_application)
         self.footer_item = rumps.MenuItem(format_footer(__version__, None), callback=None)
@@ -111,8 +105,6 @@ class ClaudeUsageApp(rumps.App):
             self.weekly_meter_item,
             self.weekly_reset_item,
             None,
-            self.notifications_item,
-            None,
             self.uninstall_item,
             self.quit_item,
             None,
@@ -123,11 +115,6 @@ class ClaudeUsageApp(rumps.App):
         self.timer.start()
 
         self.refresh(None)
-
-    def _toggle_notifications(self, sender) -> None:
-        self.settings.notifications_enabled = not self.settings.notifications_enabled
-        sender.state = self.settings.notifications_enabled
-        config.save_settings(self.settings)
 
     def refresh(self, _sender) -> None:
         try:
@@ -156,10 +143,6 @@ class ClaudeUsageApp(rumps.App):
         self.top_separator._menuitem.setHidden_(True)
         self._render_data_items(usage, now)
         self.footer_item.title = format_footer(__version__, now)
-
-        self.notifier.check(
-            usage.session_percent, usage.weekly_percent, self.settings.notifications_enabled
-        )
 
     def _show_error(self, message: str, actionable: bool = False) -> None:
         self.title = "⚠️"
@@ -229,9 +212,9 @@ class ClaudeUsageApp(rumps.App):
         response = rumps.alert(
             title="Avinstaller Claude Usage",
             message=(
-                "Dette fjerner autostart-oppsettet (LaunchAgent), app-ikonet "
-                "i ~/Applications, og lagrede innstillinger. Prosjektmappen "
-                "og .env beholdes. Appen avsluttes etterpå."
+                "Dette fjerner autostart-oppsettet (LaunchAgent) og app-ikonet "
+                "i ~/Applications. Prosjektmappen og .env beholdes. Appen "
+                "avsluttes etterpå."
             ),
             ok="Avinstaller",
             cancel="Avbryt",
@@ -251,7 +234,7 @@ class ClaudeUsageApp(rumps.App):
 
         rumps.alert(
             title="Avinstallert",
-            message="LaunchAgent, app-ikon og lagrede innstillinger er fjernet.",
+            message="LaunchAgent og app-ikon er fjernet.",
         )
 
         if plist_existed:

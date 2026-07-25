@@ -72,11 +72,8 @@ og viser samme oppskrift som over.
 - **Dropdown-menyen** viser begge grensene som tekstmålere
   (`Sesjon  ▰▰▰▰▱▱▱▱▱▱ 43%`) med nullstillingstidspunkt under hver, appen
   oppdaterer seg selv hvert minutt
-- **Varsle ved 90%** — av/på-bryter for macOS-notifikasjon når en
-  grense nærmer seg fullt brukt
-- **Avinstaller** — fjerner LaunchAgent-en, app-ikonet og lagrede
-  innstillinger (spør om bekreftelse først; selve prosjektmappen og
-  `.env` beholdes)
+- **Avinstaller** — fjerner LaunchAgent-en og app-ikonet (spør om
+  bekreftelse først; selve prosjektmappen og `.env` beholdes)
 
 `./install` legger også `Claude Usage.app` i `~/Applications`. Hvis appen
 skulle forsvinne fra menylinjen (f.eks. etter «Avslutt»), finner du den

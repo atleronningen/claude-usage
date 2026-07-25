@@ -1,46 +1,6 @@
-import json
-
 import pytest
 
 from claude_usage import config
-
-
-def test_load_settings_returns_defaults_when_no_file(tmp_path, monkeypatch):
-    monkeypatch.setattr(config, "CONFIG_PATH", tmp_path / "config.json")
-
-    settings = config.load_settings()
-
-    assert settings == config.Settings(notifications_enabled=True)
-
-
-def test_save_then_load_settings_round_trips(tmp_path, monkeypatch):
-    monkeypatch.setattr(config, "CONFIG_DIR", tmp_path)
-    monkeypatch.setattr(config, "CONFIG_PATH", tmp_path / "config.json")
-
-    config.save_settings(config.Settings(notifications_enabled=False))
-    loaded = config.load_settings()
-
-    assert loaded == config.Settings(notifications_enabled=False)
-
-
-def test_load_settings_falls_back_to_defaults_for_missing_keys(tmp_path, monkeypatch):
-    config_path = tmp_path / "config.json"
-    config_path.write_text(json.dumps({}))
-    monkeypatch.setattr(config, "CONFIG_PATH", config_path)
-
-    settings = config.load_settings()
-
-    assert settings == config.Settings(notifications_enabled=True)
-
-
-def test_load_settings_falls_back_to_defaults_for_corrupt_json(tmp_path, monkeypatch):
-    config_path = tmp_path / "config.json"
-    config_path.write_text("{ invalid json ]")
-    monkeypatch.setattr(config, "CONFIG_PATH", config_path)
-
-    settings = config.load_settings()
-
-    assert settings == config.Settings(notifications_enabled=True)
 
 
 def test_load_credentials_returns_cookie_and_url(monkeypatch, tmp_path):

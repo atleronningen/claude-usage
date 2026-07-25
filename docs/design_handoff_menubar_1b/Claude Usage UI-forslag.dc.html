@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics><meta name="design_doc_mode" content="canvas"><style>
+body{margin:0;background:#f0eee9;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",sans-serif}
+.dv-turn{padding:40px 44px 32px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 20px}
+.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 13px/1.2 -apple-system,sans-serif;color:#1a1a1a}
+.dv-opts{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;scroll-margin-top:16px}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 -apple-system,sans-serif;color:rgba(0,0,0,.55)}
+.dv-card{max-width:100%;background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.06);overflow:hidden}
+.dv-opt:target .dv-oid{background:#2a78d6;color:#fff}
+.dv-next{margin:22px 0 0;font:12px/1.5 -apple-system,sans-serif;color:rgba(0,0,0,.5)}
+a{color:#1a1a1a}a:hover{color:#2a78d6}
+</style></helmet>
+
+<section class="dv-turn" id="t2">
+<div class="dv-thd"><a class="dv-tid" href="#t2">2</a><span class="dv-tname">Valgt: <a class="dv-oid" href="#1b">1b</a> — alle tilstander som må implementeres</span></div>
+<div class="dv-opts">
+
+<div class="dv-opt" id="2a">
+<div class="dv-olabel"><a class="dv-oid" href="#2a">2a</a>Terskel nådd (≥ 90 %)</div>
+<div class="dv-card" style="width:400px;padding:0">
+  <div style="height:38px;background:linear-gradient(180deg,#63b8e9,#7fcaef);display:flex;align-items:center;padding:0 12px">
+    <div style="background:rgba(255,255,255,.28);border-radius:8px;padding:3px 12px;color:#fff;font:400 21px/1.2 ui-monospace,Menlo,monospace;letter-spacing:.02em">43 · 92!</div>
+  </div>
+  <div style="padding:16px 14px 20px;background:#efefef">
+    <div style="width:352px;background:#f7f7f7;border:.5px solid rgba(0,0,0,.14);border-radius:9px;box-shadow:0 10px 26px rgba(0,0,0,.22);padding:6px 0">
+      <div style="padding:2px 22px 2px 34px;font:400 21px/1.5 ui-monospace,Menlo,monospace;color:#1d1d1f">Sesjon &nbsp;▰▰▰▰▱▱▱▱▱▱ 43%</div>
+      <div style="padding:2px 22px 2px 34px;font:400 18px/1.5 -apple-system,sans-serif;color:#a3a3a8">Nullstilles 14:20 (om 1 t 47 min)</div>
+      <div style="height:1px;background:rgba(0,0,0,.11);margin:6px 14px"></div>
+      <div style="padding:2px 22px 2px 34px;font:400 21px/1.5 ui-monospace,Menlo,monospace;color:#1d1d1f">Uke &nbsp;&nbsp;&nbsp;&nbsp;▰▰▰▰▰▰▰▰▰▱ 92%</div>
+      <div style="padding:2px 22px 2px 34px;font:400 18px/1.5 -apple-system,sans-serif;color:#a3a3a8">Nullstilles man 09:00 (om 3 d)</div>
+      <div style="height:1px;background:rgba(0,0,0,.11);margin:6px 14px"></div>
+      <div style="height:34px;display:flex;align-items:center;justify-content:space-between;padding:0 22px 0 34px;font:400 21px/1 -apple-system,sans-serif;color:#1d1d1f"><span>Oppdater nå</span><span style="font-size:18px;color:#a3a3a8">14:03</span></div>
+      <div style="height:34px;display:flex;align-items:center;padding:0 22px 0 12px;font:400 21px/1 -apple-system,sans-serif;color:#1d1d1f;gap:6px"><span style="width:16px">✓</span>Varsle ved 90%</div>
+      <div style="height:1px;background:rgba(0,0,0,.11);margin:6px 14px"></div>
+      <div style="height:34px;display:flex;align-items:center;padding:0 22px 0 34px;font:400 21px/1 -apple-system,sans-serif;color:#1d1d1f">Avinstaller</div>
+      <div style="height:34px;display:flex;align-items:center;padding:0 22px 0 34px;font:400 21px/1 -apple-system,sans-serif;color:#1d1d1f">Avslutt</div>
+      <div style="height:1px;background:rgba(0,0,0,.11);margin:6px 14px"></div>
+      <div style="height:30px;display:flex;align-items:center;padding:0 22px 0 34px;font:400 18px/1 -apple-system,sans-serif;color:#a3a3a8">v0.1.0 · oppdatert 14:03</div>
+    </div>
+  </div>
+</div>
+<div style="width:400px;font:400 12px/1.55 -apple-system,sans-serif;color:rgba(0,0,0,.55)">Utropstegnet bak prosenten er hele markeringen — ren ASCII, virker i lys og mørk menylinje uten farge. Terskelen er den samme som notifikasjonen bruker.</div>
+</div>
+
+<div class="dv-opt" id="2b">
+<div class="dv-olabel"><a class="dv-oid" href="#2b">2b</a>Feil: utløpt cookie</div>
+<div class="dv-card" style="width:400px;padding:0">
+  <div style="height:38px;background:linear-gradient(180deg,#63b8e9,#7fcaef);display:flex;align-items:center;padding:0 12px">
+    <div style="background:rgba(255,255,255,.28);border-radius:8px;padding:3px 12px;color:#fff;font:400 21px/1.2 -apple-system,sans-serif">⚠️</div>
+  </div>
+  <div style="padding:16px 14px 20px;background:#efefef">
+    <div style="width:352px;background:#f7f7f7;border:.5px solid rgba(0,0,0,.14);border-radius:9px;box-shadow:0 10px 26px rgba(0,0,0,.22);padding:6px 0">
+      <div style="padding:2px 22px 2px 34px;font:400 21px/1.5 -apple-system,sans-serif;color:#1d1d1f">Cookien utløpt – oppdater</div>
+      <div style="padding:2px 22px 2px 34px;font:400 18px/1.5 -apple-system,sans-serif;color:#a3a3a8">Klikk for oppskrift · siste tall 13:03</div>
+      <div style="height:1px;background:rgba(0,0,0,.11);margin:6px 14px"></div>
+      <div style="padding:2px 22px 2px 34px;font:400 21px/1.5 ui-monospace,Menlo,monospace;color:#a3a3a8">Sesjon &nbsp;▰▰▰▰▱▱▱▱▱▱ 43%</div>
+      <div style="padding:2px 22px 2px 34px;font:400 21px/1.5 ui-monospace,Menlo,monospace;color:#a3a3a8">Uke &nbsp;&nbsp;&nbsp;&nbsp;▰▰▰▰▰▰▰▰▱▱ 76%</div>
+      <div style="height:1px;background:rgba(0,0,0,.11);margin:6px 14px"></div>
+      <div style="height:34px;display:flex;align-items:center;padding:0 22px 0 34px;font:400 21px/1 -apple-system,sans-serif;color:#1d1d1f">Oppdater nå</div>
+      <div style="height:34px;display:flex;align-items:center;padding:0 22px 0 12px;font:400 21px/1 -apple-system,sans-serif;color:#1d1d1f;gap:6px"><span style="width:16px">✓</span>Varsle ved 90%</div>
+      <div style="height:1px;background:rgba(0,0,0,.11);margin:6px 14px"></div>
+      <div style="height:34px;display:flex;align-items:center;padding:0 22px 0 34px;font:400 21px/1 -apple-system,sans-serif;color:#1d1d1f">Avinstaller</div>
+      <div style="height:34px;display:flex;align-items:center;padding:0 22px 0 34px;font:400 21px/1 -apple-system,sans-serif;color:#1d1d1f">Avslutt</div>
+      <div style="height:1px;background:rgba(0,0,0,.11);margin:6px 14px"></div>
+      <div style="height:30px;display:flex;align-items:center;padding:0 22px 0 34px;font:400 18px/1 -apple-system,sans-serif;color:#a3a3a8">v0.1.0 · oppdatert 13:03</div>
+    </div>
+  </div>
+</div>
+<div style="width:400px;font:400 12px/1.55 -apple-system,sans-serif;color:rgba(0,0,0,.55)">Feilmeldingen flyttes øverst og er ikke lenger grå/død — den er klikkbar og har en hjelpelinje under. Siste kjente tall blir stående, men dempet, så du ser at de er gamle.</div>
+</div>
+
+<div class="dv-opt" id="2c">
+<div class="dv-olabel"><a class="dv-oid" href="#2c">2c</a>Mørk modus (samme strenger)</div>
+<div class="dv-card" style="width:400px;padding:0">
+  <div style="height:38px;background:linear-gradient(180deg,#2a3138,#343b42);display:flex;align-items:center;padding:0 12px">
+    <div style="background:rgba(255,255,255,.18);border-radius:8px;padding:3px 12px;color:#f2f2f7;font:400 21px/1.2 ui-monospace,Menlo,monospace;letter-spacing:.02em">43 · 76</div>
+  </div>
+  <div style="padding:16px 14px 20px;background:#1c1c1e">
+    <div style="width:352px;background:#2c2c2e;border:.5px solid rgba(255,255,255,.12);border-radius:9px;box-shadow:0 10px 26px rgba(0,0,0,.5);padding:6px 0">
+      <div style="padding:2px 22px 2px 34px;font:400 21px/1.5 ui-monospace,Menlo,monospace;color:#f2f2f7">Sesjon &nbsp;▰▰▰▰▱▱▱▱▱▱ 43%</div>
+      <div style="padding:2px 22px 2px 34px;font:400 18px/1.5 -apple-system,sans-serif;color:#8e8e93">Nullstilles 14:20 (om 1 t 47 min)</div>
+      <div style="height:1px;background:rgba(255,255,255,.13);margin:6px 14px"></div>
+      <div style="padding:2px 22px 2px 34px;font:400 21px/1.5 ui-monospace,Menlo,monospace;color:#f2f2f7">Uke &nbsp;&nbsp;&nbsp;&nbsp;▰▰▰▰▰▰▰▰▱▱ 76%</div>
+      <div style="padding:2px 22px 2px 34px;font:400 18px/1.5 -apple-system,sans-serif;color:#8e8e93">Nullstilles man 09:00 (om 3 d)</div>
+      <div style="height:1px;background:rgba(255,255,255,.13);margin:6px 14px"></div>
+      <div style="height:34px;display:flex;align-items:center;justify-content:space-between;padding:0 22px 0 34px;font:400 21px/1 -apple-system,sans-serif;color:#f2f2f7"><span>Oppdater nå</span><span style="font-size:18px;color:#8e8e93">14:03</span></div>
+      <div style="height:34px;display:flex;align-items:center;padding:0 22px 0 12px;font:400 21px/1 -apple-system,sans-serif;color:#f2f2f7;gap:6px"><span style="width:16px">✓</span>Varsle ved 90%</div>
+      <div style="height:1px;background:rgba(255,255,255,.13);margin:6px 14px"></div>
+      <div style="height:34px;display:flex;align-items:center;padding:0 22px 0 34px;font:400 21px/1 -apple-system,sans-serif;color:#f2f2f7">Avinstaller</div>
+      <div style="height:34px;display:flex;align-items:center;padding:0 22px 0 34px;font:400 21px/1 -apple-system,sans-serif;color:#f2f2f7">Avslutt</div>
+      <div style="height:1px;background:rgba(255,255,255,.13);margin:6px 14px"></div>
+      <div style="height:30px;display:flex;align-items:center;padding:0 22px 0 34px;font:400 18px/1 -apple-system,sans-serif;color:#8e8e93">v0.1.0 · oppdatert 14:03</div>
+    </div>
+  </div>
+</div>
+<div style="width:400px;font:400 12px/1.55 -apple-system,sans-serif;color:rgba(0,0,0,.55)">Fordelen med tekstløsningen: mørk modus kommer gratis. Ingen farger eller bilder å tilpasse — macOS tegner både tittel og menytekst riktig av seg selv.</div>
+</div>
+
+</div>
+<p class="dv-next">Prøv videre: «vis også tilstanden rett etter oppstart, før første hent» · «gjør menylinjetittelen enda kortere» · «legg til et menyvalg for å åpne claude.ai/settings/usage»</p>
+</section>
+
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">Menylinje + dropdown — nåværende UI og tre retninger (alt vist ~1,6× av faktisk størrelse)</span></div>
+<div class="dv-opts">
+
+<div class="dv-opt" id="1a">
+<div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>Nåværende UI (referanse)</div>
+<div class="dv-card" style="width:400px;padding:0">
+  <div style="height:38px;background:linear-gradient(180deg,#63b8e9,#7fcaef);display:flex;align-items:center;padding:0 12px;gap:14px">
+    <div style="background:rgba(255,255,255,.28);border-radius:8px;padding:3px 12px;color:#fff;font:400 21px/1.2 -apple-system,sans-serif">S:43% U:76%</div>
+  </div>
+  <div style="padding:16px 14px 20px;background:#efefef">
+    <div style="width:330px;background:#f7f7f7;border:.5px solid rgba(0,0,0,.14);border-radius:9px;box-shadow:0 10px 26px rgba(0,0,0,.22);padding:6px 0">
+      <div style="height:34px;display:flex;align-items:center;padding:0 22px 0 34px;font:400 21px/1 -apple-system,sans-serif;color:#a3a3a8">Ingen feil</div>
+      <div style="height:1px;background:rgba(0,0,0,.11);margin:6px 14px"></div>
+      <div style="height:34px;display:flex;align-items:center;padding:0 22px 0 34px;font:400 21px/1 -apple-system,sans-serif;color:#1d1d1f">Oppdater nå</div>
+      <div style="height:34px;display:flex;align-items:center;padding:0 22px 0 12px;font:400 21px/1 -apple-system,sans-serif;color:#1d1d1f;gap:6px"><span style="width:16px">✓</span>Varsle ved 90%</div>
+      <div style="height:1px;background:rgba(0,0,0,.11);margin:6px 14px"></div>
+      <div style="height:34px;display:flex;align-items:center;padding:0 22px 0 34px;font:400 21px/1 -apple-system,sans-serif;color:#1d1d1f">Avinstaller</div>
+      <div style="height:1px;background:rgba(0,0,0,.11);margin:6px 14px"></div>
+      <div style="height:34px;display:flex;align-items:center;padding:0 22px 0 34px;font:400 21px/1 -apple-system,sans-serif;color:#a3a3a8">v0.1.0</div>
+      <div style="height:34px;display:flex;align-items:center;padding:0 22px 0 34px;font:400 21px/1 -apple-system,sans-serif;color:#1d1d1f">Avslutt</div>
+    </div>
+  </div>
+</div>
+<div style="width:400px;font:400 12px/1.55 -apple-system,sans-serif;color:rgba(0,0,0,.55)">Selve tallene bor bare i menylinjetittelen; menyen inneholder ingen data. Ingen tidshorisont, ingen indikasjon på hvor nær grensen man er.</div>
+</div>
+
+<div class="dv-opt" id="1b">
+<div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>Ren tekst, skarpere — kun rumps, ingen PyObjC</div>
+<div class="dv-card" style="width:400px;padding:0">
+  <div style="height:38px;background:linear-gradient(180deg,#63b8e9,#7fcaef);display:flex;align-items:center;padding:0 12px;gap:14px">
+    <div style="background:rgba(255,255,255,.28);border-radius:8px;padding:3px 12px;color:#fff;font:400 21px/1.2 ui-monospace,Menlo,monospace;letter-spacing:.02em">43 · 76</div>
+  </div>
+  <div style="padding:16px 14px 20px;background:#efefef">
+    <div style="width:352px;background:#f7f7f7;border:.5px solid rgba(0,0,0,.14);border-radius:9px;box-shadow:0 10px 26px rgba(0,0,0,.22);padding:6px 0">
+      <div style="padding:2px 22px 2px 34px;font:400 21px/1.5 ui-monospace,Menlo,monospace;color:#1d1d1f">Sesjon &nbsp;▰▰▰▰▱▱▱▱▱▱ 43%</div>
+      <div style="padding:2px 22px 2px 34px;font:400 18px/1.5 -apple-system,sans-serif;color:#a3a3a8">Nullstilles 14:20 (om 1 t 47 min)</div>
+      <div style="height:1px;background:rgba(0,0,0,.11);margin:6px 14px"></div>
+      <div style="padding:2px 22px 2px 34px;font:400 21px/1.5 ui-monospace,Menlo,monospace;color:#1d1d1f">Uke &nbsp;&nbsp;&nbsp;&nbsp;▰▰▰▰▰▰▰▰▱▱ 76%</div>
+      <div style="padding:2px 22px 2px 34px;font:400 18px/1.5 -apple-system,sans-serif;color:#a3a3a8">Nullstilles man 09:00 (om 3 d)</div>
+      <div style="height:1px;background:rgba(0,0,0,.11);margin:6px 14px"></div>
+      <div style="height:34px;display:flex;align-items:center;justify-content:space-between;padding:0 22px 0 34px;font:400 21px/1 -apple-system,sans-serif;color:#1d1d1f"><span>Oppdater nå</span><span style="font-size:18px;color:#a3a3a8">14:03</span></div>
+      <div style="height:34px;display:flex;align-items:center;padding:0 22px 0 12px;font:400 21px/1 -apple-system,sans-serif;color:#1d1d1f;gap:6px"><span style="width:16px">✓</span>Varsle ved 90%</div>
+      <div style="height:1px;background:rgba(0,0,0,.11);margin:6px 14px"></div>
+      <div style="height:34px;display:flex;align-items:center;padding:0 22px 0 34px;font:400 21px/1 -apple-system,sans-serif;color:#1d1d1f">Avinstaller</div>
+      <div style="height:34px;display:flex;align-items:center;padding:0 22px 0 34px;font:400 21px/1 -apple-system,sans-serif;color:#1d1d1f">Avslutt</div>
+      <div style="height:1px;background:rgba(0,0,0,.11);margin:6px 14px"></div>
+      <div style="height:30px;display:flex;align-items:center;padding:0 22px 0 34px;font:400 18px/1 -apple-system,sans-serif;color:#a3a3a8">v0.1.0 · oppdatert 14:03</div>
+    </div>
+  </div>
+</div>
+<div style="width:400px;font:400 12px/1.55 -apple-system,sans-serif;color:rgba(0,0,0,.55)"><b>Grepet:</b> data flyttes inn i menyen. Måleren er Unicode-blokker i en monospace-tittel, resten er vanlige <code>rumps.MenuItem</code>-strenger. Tittelen kuttes til <code>43 · 76</code> for å spare menylinjeplass.<br><b>Implementasjon:</b> ~30 linjer i <code>main.py</code>; sett <code>item.title</code> hvert refresh. Krever at <code>_parse_usage</code> også tar med <code>resets_at</code> fra <code>five_hour</code>/<code>seven_day</code> (verifiser feltnavn i API-responsen). Ingen nye avhengigheter, testbart som i dag.</div>
+</div>
+
+<div class="dv-opt" id="1c">
+<div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>Farge + tegnet ikon — NSAttributedString og NSImage</div>
+<div class="dv-card" style="width:400px;padding:0">
+  <div style="height:38px;background:linear-gradient(180deg,#63b8e9,#7fcaef);display:flex;align-items:center;padding:0 12px;gap:14px">
+    <div style="background:rgba(255,255,255,.28);border-radius:8px;padding:2px 12px;color:#fff;display:flex;align-items:center;gap:8px">
+      <svg width="26" height="26" viewBox="0 0 36 36" style="display:block">
+        <circle cx="18" cy="18" r="15" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="4"></circle>
+        <circle cx="18" cy="18" r="15" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-dasharray="71.6 94.2" transform="rotate(-90 18 18)"></circle>
+        <circle cx="18" cy="18" r="8" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="4"></circle>
+        <circle cx="18" cy="18" r="8" fill="none" stroke="#ffd479" stroke-width="4" stroke-linecap="round" stroke-dasharray="38.2 50.3" transform="rotate(-90 18 18)"></circle>
+      </svg>
+      <span style="font:500 21px/1.2 -apple-system,sans-serif">76%</span>
+    </div>
+  </div>
+  <div style="padding:16px 14px 20px;background:#efefef">
+    <div style="width:352px;background:#f7f7f7;border:.5px solid rgba(0,0,0,.14);border-radius:9px;box-shadow:0 10px 26px rgba(0,0,0,.22);padding:6px 0">
+      <div style="padding:3px 22px 3px 34px;font:500 19px/1.5 -apple-system,sans-serif;color:#6e6e73;letter-spacing:.04em">SESJON · 5 TIMER</div>
+      <div style="padding:0 22px 4px 34px;font:400 21px/1.5 ui-monospace,Menlo,monospace"><span style="color:#3f8f4e">▰▰▰▰</span><span style="color:#c9c9ce">▱▱▱▱▱▱</span><span style="color:#1d1d1f;font-family:-apple-system,sans-serif"> &nbsp;43%</span></div>
+      <div style="padding:0 22px 6px 34px;font:400 18px/1.4 -apple-system,sans-serif;color:#a3a3a8">Nullstilles 14:20 · om 1 t 47 min</div>
+      <div style="padding:3px 22px 3px 34px;font:500 19px/1.5 -apple-system,sans-serif;color:#6e6e73;letter-spacing:.04em">UKE</div>
+      <div style="padding:0 22px 4px 34px;font:400 21px/1.5 ui-monospace,Menlo,monospace"><span style="color:#c98a1d">▰▰▰▰▰▰▰▰</span><span style="color:#c9c9ce">▱▱</span><span style="color:#c98a1d;font-family:-apple-system,sans-serif;font-weight:600"> &nbsp;76%</span></div>
+      <div style="padding:0 22px 6px 34px;font:400 18px/1.4 -apple-system,sans-serif;color:#a3a3a8">Nullstilles man 09:00 · om 3 d</div>
+      <div style="height:1px;background:rgba(0,0,0,.11);margin:6px 14px"></div>
+      <div style="height:34px;display:flex;align-items:center;gap:9px;padding:0 22px 0 30px;font:400 21px/1 -apple-system,sans-serif;color:#1d1d1f"><svg width="19" height="19" viewBox="0 0 20 20"><circle cx="10" cy="10" r="7.5" fill="none" stroke="#1d1d1f" stroke-width="1.6" stroke-dasharray="35 12" stroke-linecap="round"></circle></svg>Oppdater nå</div>
+      <div style="height:34px;display:flex;align-items:center;padding:0 22px 0 12px;font:400 21px/1 -apple-system,sans-serif;color:#1d1d1f;gap:6px"><span style="width:16px">✓</span>Varsle ved 90%</div>
+      <div style="height:1px;background:rgba(0,0,0,.11);margin:6px 14px"></div>
+      <div style="height:34px;display:flex;align-items:center;padding:0 22px 0 34px;font:400 21px/1 -apple-system,sans-serif;color:#1d1d1f">Avinstaller</div>
+      <div style="height:34px;display:flex;align-items:center;padding:0 22px 0 34px;font:400 21px/1 -apple-system,sans-serif;color:#1d1d1f">Avslutt</div>
+      <div style="height:1px;background:rgba(0,0,0,.11);margin:6px 14px"></div>
+      <div style="height:30px;display:flex;align-items:center;padding:0 22px 0 34px;font:400 18px/1 -apple-system,sans-serif;color:#a3a3a8">v0.1.0</div>
+    </div>
+  </div>
+</div>
+<div style="width:400px;font:400 12px/1.55 -apple-system,sans-serif;color:rgba(0,0,0,.55)"><b>Grepet:</b> to konsentriske ringer i menylinjen (ytre = uke, indre = sesjon) + prosenten for den grensen som er nærmest full. Farge skifter grønn → gul → rød ved 70/90 %, og seksjonsoverskrifter gir menyen hierarki.<br><b>Implementasjon:</b> tittel via <code>NSAttributedString</code> på <code>app._nsapp.nsstatusitem.button()</code>; ikonet tegnes i <code>NSImage.imageWithSize_flipped_drawingHandler_</code> med <code>NSBezierPath</code> (ca. 40 linjer, samme teknikk som app-ikonet du alt genererer). Menylinjeikonet må <b>ikke</b> settes som template-image hvis fargen skal beholdes — da må du selv velge farger som funker i lys og mørk menylinje. Fortsatt vanlige menyelementer, bare med <code>attributedTitle</code>.</div>
+</div>
+
+<div class="dv-opt" id="1d">
+<div class="dv-olabel"><a class="dv-oid" href="#1d">1d</a>Grafisk panel i menyen — NSMenuItem.setView_</div>
+<div class="dv-card" style="width:400px;padding:0">
+  <div style="height:38px;background:linear-gradient(180deg,#63b8e9,#7fcaef);display:flex;align-items:center;padding:0 12px;gap:14px">
+    <div style="background:rgba(255,255,255,.28);border-radius:8px;padding:2px 11px;color:#fff;display:flex;align-items:center;gap:7px">
+      <svg width="24" height="24" viewBox="0 0 36 36" style="display:block">
+        <circle cx="18" cy="18" r="14" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="5"></circle>
+        <circle cx="18" cy="18" r="14" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-dasharray="66.8 87.9" transform="rotate(-90 18 18)"></circle>
+      </svg>
+      <span style="font:500 21px/1.2 -apple-system,sans-serif">76%</span>
+    </div>
+  </div>
+  <div style="padding:16px 14px 20px;background:#efefef">
+    <div style="width:352px;background:#f7f7f7;border:.5px solid rgba(0,0,0,.14);border-radius:9px;box-shadow:0 10px 26px rgba(0,0,0,.22);padding:6px 0">
+      <div style="margin:2px 8px 8px;padding:16px 16px 14px;background:#fff;border:.5px solid rgba(0,0,0,.07);border-radius:7px;display:flex;flex-direction:column;gap:16px">
+        <div style="display:flex;flex-direction:column;gap:7px">
+          <div style="display:flex;align-items:baseline;justify-content:space-between"><span style="font:500 19px/1 -apple-system,sans-serif;color:#6e6e73">Sesjon</span><span style="font:600 27px/1 -apple-system,sans-serif;color:#1d1d1f">43<span style="font-size:19px;font-weight:400;color:#a3a3a8">%</span></span></div>
+          <div style="height:9px;border-radius:5px;background:#e6e6ea;overflow:hidden"><div style="width:43%;height:100%;border-radius:5px;background:#3f8f4e"></div></div>
+          <div style="font:400 17px/1 -apple-system,sans-serif;color:#a3a3a8">nullstilles 14:20 · om 1 t 47 min</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:7px">
+          <div style="display:flex;align-items:baseline;justify-content:space-between"><span style="font:500 19px/1 -apple-system,sans-serif;color:#6e6e73">Uke</span><span style="font:600 27px/1 -apple-system,sans-serif;color:#c98a1d">76<span style="font-size:19px;font-weight:400;color:#a3a3a8">%</span></span></div>
+          <div style="height:9px;border-radius:5px;background:#e6e6ea;overflow:hidden;position:relative"><div style="width:76%;height:100%;border-radius:5px;background:#c98a1d"></div><div style="position:absolute;left:90%;top:-3px;width:2px;height:15px;background:rgba(0,0,0,.28)"></div></div>
+          <div style="display:flex;justify-content:space-between;gap:10px;font:400 17px/1 -apple-system,sans-serif;color:#a3a3a8"><span style="white-space:nowrap">nullstilles man 09:00</span><span style="white-space:nowrap">varsel 90%</span></div>
+        </div>
+      </div>
+      <div style="height:34px;display:flex;align-items:center;justify-content:space-between;padding:0 22px 0 34px;font:400 21px/1 -apple-system,sans-serif;color:#1d1d1f"><span>Oppdater nå</span><span style="font-size:18px;color:#a3a3a8">14:03</span></div>
+      <div style="height:34px;display:flex;align-items:center;padding:0 22px 0 12px;font:400 21px/1 -apple-system,sans-serif;color:#1d1d1f;gap:6px"><span style="width:16px">✓</span>Varsle ved 90%</div>
+      <div style="height:1px;background:rgba(0,0,0,.11);margin:6px 14px"></div>
+      <div style="height:34px;display:flex;align-items:center;padding:0 22px 0 34px;font:400 21px/1 -apple-system,sans-serif;color:#1d1d1f">Avinstaller</div>
+      <div style="height:34px;display:flex;align-items:center;padding:0 22px 0 34px;font:400 21px/1 -apple-system,sans-serif;color:#1d1d1f">Avslutt</div>
+      <div style="height:1px;background:rgba(0,0,0,.11);margin:6px 14px"></div>
+      <div style="height:30px;display:flex;align-items:center;padding:0 22px 0 34px;font:400 18px/1 -apple-system,sans-serif;color:#a3a3a8">v0.1.0</div>
+    </div>
+  </div>
+</div>
+<div style="width:400px;font:400 12px/1.55 -apple-system,sans-serif;color:rgba(0,0,0,.55)"><b>Grepet:</b> øverste menyelement er en egen <code>NSView</code> — ekte stolper, store tall, terskelmarkør ved 90 % og nedtelling. Resten av menyen er uendret og native.<br><b>Implementasjon:</b> <code>rumps.MenuItem</code> har ikke <code>view</code>, så du går via <code>item._menuitem.setView_(view)</code>. Bygg viewet i PyObjC (<code>NSView</code> + <code>NSTextField</code> + lag med <code>cornerRadius</code>, eller én custom <code>drawRect_</code>-subklasse) — ca. 120–180 linjer, den klart største jobben, og du må selv håndtere lys/mørk modus (<code>NSColor.labelColor</code> etc.) og bredde. Data trengs likt som i <a href="#1c">1c</a>.</div>
+</div>
+
+</div>
+<p class="dv-next">Prøv videre: «gå for <a class="dv-oid" href="#1c">1c</a>, men vis begge prosentene i menylinjen» · «vis <a class="dv-oid" href="#1d">1d</a> i mørk modus også» · «legg til en historikk-graf i <a class="dv-oid" href="#1d">1d</a>»</p>
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}"></script>
+</body>
+</html>

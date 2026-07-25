@@ -7,6 +7,8 @@ og prosjektet følger [semantisk versjonering](https://semver.org/lang/nb/).
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-07-25
+
 ### Added
 - Menylinje-visning av session- og ukeforbruk, oppdatert hvert minutt
 - Varsling ved 90 % forbruk (av/på-bryter)

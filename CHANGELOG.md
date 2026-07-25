@@ -7,6 +7,13 @@ og prosjektet følger [semantisk versjonering](https://semver.org/lang/nb/).
 
 ## [Unreleased]
 
+### Added
+- MIT-lisens
+
+### Changed
+- README oppdatert til å reflektere at appen kan installeres av andre enn
+  Atle, ikke bare til rent personlig bruk
+
 ## [0.1.0] - 2026-07-25
 
 ### Added

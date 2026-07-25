@@ -10,8 +10,8 @@ ukentlige grensen, oppdatert hvert minutt.
 S:40% U:15%
 ```
 
-Laget for personlig bruk. Ikke publisert eller distribuert som et
-signert program.
+Kjøres fra kildekode via et lokalt Python-virtualenv — ikke pakket eller
+signert som en frittstående macOS-app.
 
 ## Hvordan det virker
 
@@ -87,4 +87,4 @@ Se `CLAUDE.md` for mer om stack og mappestruktur, og
 
 ## Lisens
 
-Ingen — privat prosjekt til eget bruk.
+[MIT](LICENSE).

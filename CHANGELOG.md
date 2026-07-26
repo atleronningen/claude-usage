@@ -7,6 +7,8 @@ og prosjektet følger [semantisk versjonering](https://semver.org/lang/nb/).
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-07-26
+
 ### Changed
 - Feilmeldinger som «Uventet HTTP-status: 400» er nå klikkbare og åpner
   samme oppskrift som ved utløpt cookie, i stedet for å være en blindvei

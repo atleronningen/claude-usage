@@ -13,6 +13,9 @@ og prosjektet følger [semantisk versjonering](https://semver.org/lang/nb/).
 - Oppskriften (README og app-hjelpen) forklarer nå også hvordan
   `CLAUDE_USAGE_API_URL` hentes (feltet **Request URL** i DevTools), ikke
   bare cookien
+- README og CLAUDE.md dokumenterer nå at `./install` må kjøres på nytt
+  etter å ha flyttet prosjektmappen, siden LaunchAgenten har den
+  absolutte stien hardkodet
 
 ## [0.2.0] - 2026-07-25
 

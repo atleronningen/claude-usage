@@ -27,6 +27,11 @@ usage-API er bak Cloudflare-beskyttelse som blokkerer på TLS-fingerprint
 - `scripts/` — LaunchAgent-plist og installasjonsskript
 - `.env` (gitignored) — `CLAUDE_USAGE_COOKIE` og `CLAUDE_USAGE_API_URL`, se `.env.example`
 
+LaunchAgent-plisten (`~/Library/LaunchAgents/local.claude-usage.plist`) får
+prosjektmappens absolutte sti hardkodet av `install_launch_agent.sh` ved
+installasjon. Flyttes prosjektmappen, må `./install` kjøres på nytt fra den
+nye plasseringen for at autostart/app-ikonet skal fungere igjen.
+
 ## Versjonering
 
 Semantisk versjonering (`MAJOR.MINOR.PATCH`). `__version__` i

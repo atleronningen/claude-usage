@@ -45,6 +45,14 @@ cd claude-usage
 avhengigheter, oppretter en `.env`-fil fra malen, og setter opp en
 LaunchAgent som starter appen automatisk ved pålogging.
 
+### Hvis du flytter prosjektmappen
+
+Autostart-oppsettet (LaunchAgenten) har prosjektmappens absolutte sti
+hardkodet fra installasjonstidspunktet. Flytter du mappen til et annet sted,
+finner appen ikke veien fra `~/Applications`-ikonet lenger. Kjør `./install`
+på nytt fra den nye plasseringen for å fikse dette — `.env` ligger i
+prosjektmappen og flyttes med, så du trenger ikke hente ny cookie/org-ID.
+
 ### Sett opp cookien
 
 Første gang må du selv hente en cookie fra nettleseren din:

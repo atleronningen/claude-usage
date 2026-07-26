@@ -127,7 +127,7 @@ class ClaudeUsageApp(rumps.App):
             self._show_error("Cookien utløpt – oppdater", actionable=True)
             return
         except UsageFetchError as exc:
-            self._show_error(str(exc), actionable=False)
+            self._show_error(str(exc), actionable=True)
             return
         except Exception as exc:
             self._show_error(f"Uventet feil: {exc}", actionable=False)
@@ -247,14 +247,17 @@ class ClaudeUsageApp(rumps.App):
     def _show_help(self, _sender) -> None:
         subprocess.run(["open", "-e", str(config.env_file_path())])
         rumps.alert(
-            title="Slik henter du en fersk cookie",
+            title="Slik henter du fersk cookie og API-URL",
             message=(
                 "1. Åpne claude.ai/settings/usage i nettleseren\n"
                 "2. Åpne utviklerverktøy (⌘+⌥+I) → Network-fanen\n"
                 "3. Last siden på nytt, klikk på \"usage\"-forespørselen\n"
                 "4. Under Headers → Request Headers: kopier hele Cookie-verdien\n"
-                "5. Lim inn i CLAUDE_USAGE_COOKIE i .env-filen som nettopp åpnet seg\n"
-                "6. Lagre filen — appen henter automatisk på nytt innen ett minutt"
+                "   og lim inn i CLAUDE_USAGE_COOKIE\n"
+                "5. Under Headers: kopier feltet Request URL (øverst) og lim\n"
+                "   inn i CLAUDE_USAGE_API_URL\n"
+                "6. Lagre .env-filen som nettopp åpnet seg — appen henter\n"
+                "   automatisk på nytt innen ett minutt"
             ),
         )
 

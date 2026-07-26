@@ -56,8 +56,8 @@ Første gang må du selv hente en cookie fra nettleseren din:
    `Cookie`-verdien
 4. Lim den inn som `CLAUDE_USAGE_COOKIE` i `.env`-filen (opprettet av
    `./install`)
-5. Legg også inn URL-en til selve forespørselen som
-   `CLAUDE_USAGE_API_URL` (ser slik ut:
+5. Under **Headers**: kopier feltet **Request URL** (øverst i panelet)
+   og lim den inn som `CLAUDE_USAGE_API_URL` (ser slik ut:
    `https://claude.ai/api/organizations/<org-id>/usage`)
 
 Cookien utløper med jevne mellomrom. Når appen viser ⚠️ i menylinjen,

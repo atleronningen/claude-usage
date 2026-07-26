@@ -12,7 +12,7 @@ from claude_usage.main import (
     format_reset,
     format_title,
 )
-from claude_usage.usage_client import UsageAuthError, UsageData
+from claude_usage.usage_client import UsageAuthError, UsageData, UsageFetchError
 
 NOW = datetime(2026, 7, 24, 12, 33, 0, tzinfo=timezone.utc)
 
@@ -87,6 +87,20 @@ def test_error_state_before_any_fetch_hides_all_data_lines():
     assert app.session_meter_item.hidden is True
     assert app.weekly_meter_item.hidden is True
     assert app.footer_item.title == f"App v{__version__}"
+
+
+def test_fetch_error_is_actionable():
+    """En UsageFetchError (f.eks. HTTP 400 pga. feil org-ID i .env) skal
+    kunne klikkes for å åpne oppskriften, akkurat som utløpt cookie."""
+    with patch("claude_usage.main.config.load_credentials", return_value=("c", "u")), \
+         patch(
+             "claude_usage.main.fetch_usage",
+             side_effect=UsageFetchError("Uventet HTTP-status: 400"),
+         ):
+        app = ClaudeUsageApp()
+
+    assert app.error_item.title == "Uventet HTTP-status: 400"
+    assert app.error_item.callback is not None
 
 
 def test_error_state_with_prior_data_shows_stale_meters_without_resets():

@@ -7,6 +7,13 @@ og prosjektet følger [semantisk versjonering](https://semver.org/lang/nb/).
 
 ## [Unreleased]
 
+### Changed
+- Feilmeldinger som «Uventet HTTP-status: 400» er nå klikkbare og åpner
+  samme oppskrift som ved utløpt cookie, i stedet for å være en blindvei
+- Oppskriften (README og app-hjelpen) forklarer nå også hvordan
+  `CLAUDE_USAGE_API_URL` hentes (feltet **Request URL** i DevTools), ikke
+  bare cookien
+
 ## [0.2.0] - 2026-07-25
 
 ### Added

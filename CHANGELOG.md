@@ -7,6 +7,8 @@ og prosjektet følger [semantisk versjonering](https://semver.org/lang/nb/).
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-07-28
+
 ### Fixed
 - Appen dukket opp som et eget "Python"-ikon i Dock/app-switcher fordi
   LaunchAgenten starter venv-pythonen direkte i stedet for via

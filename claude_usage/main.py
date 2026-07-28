@@ -6,6 +6,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import rumps
+from AppKit import NSApplication, NSApplicationActivationPolicyAccessory
 
 from claude_usage import __version__, config
 from claude_usage.usage_client import UsageAuthError, UsageData, UsageFetchError, fetch_usage
@@ -263,6 +264,7 @@ class ClaudeUsageApp(rumps.App):
 
 
 def main() -> None:
+    NSApplication.sharedApplication().setActivationPolicy_(NSApplicationActivationPolicyAccessory)
     ClaudeUsageApp().run()
 
 

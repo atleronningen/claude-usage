@@ -7,6 +7,8 @@ og prosjektet følger [semantisk versjonering](https://semver.org/lang/nb/).
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-09-13
+
 ### Added
 - Støtte for flere Claude-kontoer. Hver konto settes opp med en nummerert
   blokk i `.env` (`CLAUDE_USAGE_ACCOUNT_<N>_LABEL`/`_COOKIE`/`_API_URL`)

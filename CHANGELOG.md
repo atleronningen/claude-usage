@@ -7,6 +7,8 @@ og prosjektet følger [semantisk versjonering](https://semver.org/lang/nb/).
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-09-13
+
 ### Changed
 - Målerne i dropdown-menyen er tegnet om til en kolonnerad: etikett, stolpe,
   prosent og nedtelling står i faste kolonner på én linje, med tabulære sifre

@@ -59,7 +59,8 @@ nettleseren. Lav kompleksitet.
 målerlinjene ga blå markering uten å være klikkbare (se `CHANGELOG.md`
 v0.3.0). Valget falt på egentegnede linjer. Plukkes snarveien opp, kan
 målerlinjene i stedet bli klikkbare og åpne usage-siden for sin konto –
-da er markeringen sann, og `make_reading_line()` i `main.py` kan fjernes.
+da er markeringen sann, og de egentegnede radene i `main.py`
+(`make_meter_line()`) kan fjernes.
 Med flere kontoer må snarveien uansett vite hvilken konto den gjelder.
 
 ## Konfigurerbar terskel/oppdateringsintervall

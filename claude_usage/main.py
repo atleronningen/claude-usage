@@ -1,22 +1,27 @@
 from __future__ import annotations
 
 import functools
+import math
 import shutil
 import subprocess
 import threading
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+import objc
 import rumps
 from AppKit import (
     NSApplication,
     NSApplicationActivationPolicyAccessory,
+    NSBezierPath,
     NSColor,
     NSFont,
+    NSFontWeightRegular,
+    NSTextAlignmentRight,
     NSTextField,
     NSView,
 )
-from Foundation import NSMakePoint, NSMakeRect
+from Foundation import NSMakeRect
 from PyObjCTools import AppHelper
 
 from claude_usage import __version__, config
@@ -28,19 +33,122 @@ LAUNCH_AGENT_LABEL = "local.claude-usage"
 APP_BUNDLE_PATH = Path.home() / "Applications" / "Claude Usage.app"
 THRESHOLD_PERCENT = 90
 
-METER_CELLS = 10
-METER_FILLED = "▰"
-METER_EMPTY = "▱"
 WEEKDAY_ABBREVIATIONS = ["man", "tir", "ons", "tor", "fre", "lør", "søn"]
 
-# Innrykk som lar en egentegnet linje flukte med vanlige menyelementer.
+# Kolonnene i en målerrad, i punkter. Innrykket lar raden flukte med
+# vanlige menyelementer; summen av alle kolonnene er bredden på menyen,
+# siden målerraden er den bredeste den inneholder.
 MENU_TEXT_INSET = 21.0
-MENU_TEXT_TRAILING = 24.0
-MENU_TEXT_PADDING = 2.0
+METER_LABEL_WIDTH = 52.0
+METER_BAR_WIDTH = 69.0
+METER_BAR_HEIGHT = 4.0
+METER_PERCENT_GAP = 8.0
+METER_PERCENT_WIDTH = 44.0
+METER_COUNTDOWN_WIDTH = 92.0
+METER_ROW_TRAILING = 14.0
+METER_ROW_MIN_HEIGHT = 22.0
+METER_ROW_WIDTH = (
+    MENU_TEXT_INSET
+    + METER_LABEL_WIDTH
+    + METER_BAR_WIDTH
+    + METER_PERCENT_GAP
+    + METER_PERCENT_WIDTH
+    + METER_COUNTDOWN_WIDTH
+    + METER_ROW_TRAILING
+)
+
+# Stolpen tegnes i systemets tekstfarge med lav metning, så den holder
+# seg rolig ved siden av teksten i både lys og mørk modus.
+BAR_TRACK_ALPHA = 0.12
+BAR_FILL_ALPHA = 0.6
+BAR_MUTED_FACTOR = 0.5
+
+# Nedtellingen står i mindre skrift enn resten av raden.
+SECONDARY_FONT_DELTA = 1.5
 
 
-def make_reading_line() -> tuple[NSView, NSTextField]:
-    """En menylinje vi tegner selv, for tekst som bare skal leses.
+class MeterBar(NSView):
+    """Stolpen i en målerrad.
+
+    Tegnes for hånd i stedet for å settes som farge på et lag: `drawRect_`
+    kalles med visningens gjeldende utseende, så systemfargene følger et
+    bytte mellom lys og mørk modus uten at menyen bygges på nytt.
+    """
+
+    def initWithFrame_(self, frame):
+        self = objc.super(MeterBar, self).initWithFrame_(frame)
+        if self is None:
+            return None
+        self.percent = 0
+        self.critical = False
+        self.muted = False
+        return self
+
+    def drawRect_(self, _dirty):
+        bounds = self.bounds()
+        radius = bounds.size.height / 2.0
+        dimming = BAR_MUTED_FACTOR if self.muted else 1.0
+
+        NSColor.labelColor().colorWithAlphaComponent_(
+            BAR_TRACK_ALPHA * dimming
+        ).setFill()
+        NSBezierPath.bezierPathWithRoundedRect_xRadius_yRadius_(
+            bounds, radius, radius
+        ).fill()
+
+        share = max(0.0, min(1.0, self.percent / 100.0))
+        if share == 0:
+            return
+
+        if self.critical and not self.muted:
+            fill_color = NSColor.systemRedColor()
+        else:
+            fill_color = NSColor.labelColor().colorWithAlphaComponent_(
+                BAR_FILL_ALPHA * dimming
+            )
+        fill_color.setFill()
+        # Et fyll smalere enn stolpen er høy blir en flis. En liten prosent
+        # skal likevel synes, så det minste vi tegner er en prikk.
+        width = max(bounds.size.height, bounds.size.width * share)
+        NSBezierPath.bezierPathWithRoundedRect_xRadius_yRadius_(
+            NSMakeRect(0, 0, width, bounds.size.height), radius, radius
+        ).fill()
+
+
+class MeterLine:
+    """Feltene i én målerrad, samlet så raden kan oppdateres uten å bygges
+    på nytt: etikett, stolpe, prosent og nedtelling i faste kolonner."""
+
+    def __init__(self, view, label, bar, percent, countdown):
+        self.view = view
+        self.label = label
+        self.bar = bar
+        self.percent = percent
+        self.countdown = countdown
+
+    def update(self, *, label, percent, countdown, critical, muted, tooltip):
+        self.label.setStringValue_(label)
+        self.percent.setStringValue_(format_percent(percent))
+        self.countdown.setStringValue_(countdown or "")
+        self.view.setToolTip_(tooltip)
+
+        text_color = NSColor.secondaryLabelColor() if muted else NSColor.labelColor()
+        self.label.setTextColor_(text_color)
+        self.percent.setTextColor_(
+            NSColor.systemRedColor() if critical and not muted else text_color
+        )
+        self.countdown.setTextColor_(
+            NSColor.tertiaryLabelColor() if muted else NSColor.secondaryLabelColor()
+        )
+
+        self.bar.percent = percent
+        self.bar.critical = critical
+        self.bar.muted = muted
+        self.bar.setNeedsDisplay_(True)
+
+
+def make_meter_line() -> MeterLine:
+    """En menylinje vi tegner selv, for tall som bare skal leses.
 
     Et vanlig menyelement er enten påskrudd — og får blå markering ved
     mouse-over, som lover en handling som ikke finnes — eller avslått, og
@@ -48,16 +156,63 @@ def make_reading_line() -> tuple[NSView, NSTextField]:
     med egen visning slipper begge deler: det markeres aldri, og fargen
     er vår.
     """
-    label = NSTextField.labelWithString_("")
-    label.setFont_(NSFont.menuFontOfSize_(0))
-    label.setTextColor_(NSColor.labelColor())
-    label.sizeToFit()
+    font = NSFont.menuFontOfSize_(0)
+    small_font = NSFont.menuFontOfSize_(font.pointSize() - SECONDARY_FONT_DELTA)
+    # Tabulære sifre: prosentkolonnen skal stå stille når tallet endrer seg.
+    figure_font = NSFont.monospacedDigitSystemFontOfSize_weight_(
+        font.pointSize(), NSFontWeightRegular
+    )
 
-    height = label.frame().size.height + 2 * MENU_TEXT_PADDING
-    container = NSView.alloc().initWithFrame_(NSMakeRect(0, 0, 1, height))
-    label.setFrameOrigin_(NSMakePoint(MENU_TEXT_INSET, MENU_TEXT_PADDING))
-    container.addSubview_(label)
-    return container, label
+    height = max(METER_ROW_MIN_HEIGHT, _text_height(font) + 6.0)
+    view = NSView.alloc().initWithFrame_(NSMakeRect(0, 0, METER_ROW_WIDTH, height))
+    baseline = (height - _text_height(font)) / 2.0 - font.descender()
+
+    label = _place_field(view, font, MENU_TEXT_INSET, METER_LABEL_WIDTH, baseline)
+
+    bar_x = MENU_TEXT_INSET + METER_LABEL_WIDTH
+    bar = MeterBar.alloc().initWithFrame_(
+        NSMakeRect(
+            bar_x,
+            round((height - METER_BAR_HEIGHT) / 2.0),
+            METER_BAR_WIDTH,
+            METER_BAR_HEIGHT,
+        )
+    )
+    view.addSubview_(bar)
+
+    percent_x = bar_x + METER_BAR_WIDTH + METER_PERCENT_GAP
+    percent = _place_field(view, figure_font, percent_x, METER_PERCENT_WIDTH, baseline)
+    percent.setAlignment_(NSTextAlignmentRight)
+
+    countdown = _place_field(
+        view,
+        small_font,
+        percent_x + METER_PERCENT_WIDTH,
+        METER_COUNTDOWN_WIDTH,
+        baseline,
+    )
+    countdown.setAlignment_(NSTextAlignmentRight)
+
+    return MeterLine(view, label, bar, percent, countdown)
+
+
+def _text_height(font) -> float:
+    return math.ceil(font.ascender() - font.descender())
+
+
+def _place_field(container, font, x: float, width: float, baseline: float) -> NSTextField:
+    """Et tekstfelt i en fast kolonne, satt på en felles grunnlinje.
+
+    Kolonnene har ulik skriftstørrelse. Uten felles grunnlinje ville
+    nedtellingen flyte over eller under prosenten i samme rad.
+    """
+    field = NSTextField.labelWithString_("")
+    field.setFont_(font)
+    field.setFrame_(
+        NSMakeRect(x, baseline + font.descender(), width, _text_height(font))
+    )
+    container.addSubview_(field)
+    return field
 
 
 def format_title(session: int, weekly: int, threshold: int) -> str:
@@ -66,33 +221,47 @@ def format_title(session: int, weekly: int, threshold: int) -> str:
     return f"{session_str} · {weekly_str}"
 
 
-def format_meter(label: str, percent: int, threshold: int) -> str:
-    filled = max(0, min(METER_CELLS, round(percent / 10)))
-    bar = METER_FILLED * filled + METER_EMPTY * (METER_CELLS - filled)
-    suffix = "!" if percent >= threshold else ""
-    return f"{label:<7}{bar} {percent}%{suffix}"
+def format_percent(percent: int) -> str:
+    # Smalt hardt mellomrom: tallet og prosenttegnet skal aldri skilles.
+    return f"{percent}\u202f%"
 
 
-def format_reset(resets_at: datetime | None, now: datetime) -> str | None:
+def format_meter(label: str, percent: int, countdown: str | None) -> str:
+    """Hele raden som én streng – det skjermlesere og testene leser."""
+    if countdown is None:
+        return f"{label} {format_percent(percent)}"
+    return f"{label} {format_percent(percent)} · {countdown}"
+
+
+def format_countdown(resets_at: datetime | None, now: datetime) -> str | None:
+    if resets_at is None:
+        return None
+
+    delta = resets_at - now
+
+    if delta <= timedelta(minutes=1):
+        return "nå"
+    if delta < timedelta(hours=1):
+        return f"om {int(delta.total_seconds() // 60)} min"
+    if delta < timedelta(hours=24):
+        hours, minutes = divmod(int(delta.total_seconds() // 60), 60)
+        return f"om {hours} t {minutes} min"
+    return f"om {round(delta.total_seconds() / 86400)} d"
+
+
+def format_reset_at(resets_at: datetime | None, now: datetime) -> str | None:
+    """Klokkeslettet for nullstillingen – ligger i verktøytipset på raden.
+
+    Ukedagen tas med først når nullstillingen ligger så langt fram at
+    klokkeslettet alene er tvetydig.
+    """
     if resets_at is None:
         return None
 
     local = resets_at.astimezone()
-    delta = resets_at - now
-
-    if delta <= timedelta(minutes=1):
-        return f"Nullstilles {local:%H:%M} (nå)"
-    if delta < timedelta(hours=1):
-        minutes = int(delta.total_seconds() // 60)
-        return f"Nullstilles {local:%H:%M} (om {minutes} min)"
-    if delta < timedelta(hours=24):
-        total_minutes = int(delta.total_seconds() // 60)
-        hours, minutes = divmod(total_minutes, 60)
-        return f"Nullstilles {local:%H:%M} (om {hours} t {minutes} min)"
-
-    weekday = WEEKDAY_ABBREVIATIONS[local.weekday()]
-    days = round(delta.total_seconds() / 86400)
-    return f"Nullstilles {weekday} {local:%H:%M} (om {days} d)"
+    if resets_at - now < timedelta(hours=24):
+        return f"Nullstilles {local:%H:%M}"
+    return f"Nullstilles {WEEKDAY_ABBREVIATIONS[local.weekday()]} {local:%H:%M}"
 
 
 def format_footer(version: str, updated_at: datetime | None) -> str:
@@ -127,15 +296,12 @@ class AccountMenuGroup:
         self.error = rumps.MenuItem(f"feil-{account.key}", callback=None)
         self.stale = rumps.MenuItem(f"gamle-tall-{account.key}", callback=None)
         self.session_meter = rumps.MenuItem(f"sesjon-{account.key}", callback=None)
-        self.session_reset = rumps.MenuItem(f"sesjon-nullstilling-{account.key}", callback=None)
-        self.mid_separator = rumps.rumps.SeparatorMenuItem()
         self.weekly_meter = rumps.MenuItem(f"uke-{account.key}", callback=None)
-        self.weekly_reset = rumps.MenuItem(f"uke-nullstilling-{account.key}", callback=None)
 
-        session_view, self.session_meter_label = make_reading_line()
-        self.session_meter._menuitem.setView_(session_view)
-        weekly_view, self.weekly_meter_label = make_reading_line()
-        self.weekly_meter._menuitem.setView_(weekly_view)
+        self.session_line = make_meter_line()
+        self.session_meter._menuitem.setView_(self.session_line.view)
+        self.weekly_line = make_meter_line()
+        self.weekly_meter._menuitem.setView_(self.weekly_line.view)
         self.end_separator = rumps.rumps.SeparatorMenuItem()
 
         for item in (self.header, self.error, self.stale):
@@ -143,14 +309,7 @@ class AccountMenuGroup:
         # Menyen styrer av/på selv (autoenablesItems=False), så alt som
         # ikke skal kunne klikkes må slås av eksplisitt — også mens det
         # er skjult.
-        for item in (
-            self.error,
-            self.stale,
-            self.session_meter,
-            self.session_reset,
-            self.weekly_meter,
-            self.weekly_reset,
-        ):
+        for item in (self.error, self.stale, self.session_meter, self.weekly_meter):
             item._menuitem.setEnabled_(False)
 
     def entries(self) -> list[tuple[str, object]]:
@@ -165,10 +324,7 @@ class AccountMenuGroup:
             (f"konto:{self.key}:feil", self.error),
             (f"konto:{self.key}:gamle-tall", self.stale),
             (f"konto:{self.key}:sesjon", self.session_meter),
-            (f"konto:{self.key}:sesjon-nullstilling", self.session_reset),
-            (f"konto:{self.key}:midtskille", self.mid_separator),
             (f"konto:{self.key}:uke", self.weekly_meter),
-            (f"konto:{self.key}:uke-nullstilling", self.weekly_reset),
             (f"konto:{self.key}:slutt", self.end_separator),
         ]
 
@@ -338,39 +494,28 @@ class ClaudeUsageApp(rumps.App):
             group.stale.hidden = True
 
         # Gamle tall dempes, ferske står i full vekt.
-        group.session_meter.hidden = False
         self._set_meter(
             group.session_meter,
-            group.session_meter_label,
-            format_meter("Sesjon", result.usage.session_percent, THRESHOLD_PERCENT),
+            group.session_line,
+            "Sesjon",
+            result.usage.session_percent,
+            result.usage.session_resets_at,
+            now,
             muted=stale,
         )
-        group.weekly_meter.hidden = False
         self._set_meter(
             group.weekly_meter,
-            group.weekly_meter_label,
-            format_meter("Uke", result.usage.weekly_percent, THRESHOLD_PERCENT),
+            group.weekly_line,
+            "Uke",
+            result.usage.weekly_percent,
+            result.usage.weekly_resets_at,
+            now,
             muted=stale,
         )
-
-        session_reset = None if stale else format_reset(result.usage.session_resets_at, now)
-        group.session_reset.hidden = session_reset is None
-        if session_reset is not None:
-            self._set_muted_title(group.session_reset, session_reset)
-
-        weekly_reset = None if stale else format_reset(result.usage.weekly_resets_at, now)
-        group.weekly_reset.hidden = weekly_reset is None
-        if weekly_reset is not None:
-            self._set_muted_title(group.weekly_reset, weekly_reset)
-
-        group.mid_separator._menuitem.setHidden_(stale)
 
     def _hide_meters(self, group: AccountMenuGroup) -> None:
         group.session_meter.hidden = True
-        group.session_reset.hidden = True
         group.weekly_meter.hidden = True
-        group.weekly_reset.hidden = True
-        group.mid_separator._menuitem.setHidden_(True)
 
     def _show_app_error(self, message: str, actionable: bool) -> None:
         """Feil som gjelder hele appen — i praksis «ingen kontoer i .env»."""
@@ -436,19 +581,22 @@ class ClaudeUsageApp(rumps.App):
         item._menuitem.setEnabled_(False)
 
     @staticmethod
-    def _set_meter(item, label, text: str, *, muted: bool) -> None:
-        """Oppdater en egentegnet målerlinje og la elementet vokse med teksten."""
-        item.title = text  # bevart for tilgjengelighet og tester
-        label.setStringValue_(text)
-        label.setTextColor_(
-            NSColor.secondaryLabelColor() if muted else NSColor.labelColor()
-        )
-        label.sizeToFit()
+    def _set_meter(item, line, label, percent, resets_at, now, *, muted: bool) -> None:
+        """Oppdater én målerrad.
 
-        size = label.frame().size
-        container = item._menuitem.view()
-        container.setFrameSize_(
-            (size.width + MENU_TEXT_INSET + MENU_TEXT_TRAILING, size.height + 2 * MENU_TEXT_PADDING)
+        Nedtellingen og verktøytipset faller bort når tallene er gamle: de
+        ville telt ned mot en nullstilling vi ikke lenger vet noe om.
+        """
+        countdown = None if muted else format_countdown(resets_at, now)
+        item.hidden = False
+        item.title = format_meter(label, percent, countdown)  # for tilgjengelighet og tester
+        line.update(
+            label=label,
+            percent=percent,
+            countdown=countdown,
+            critical=percent >= THRESHOLD_PERCENT,
+            muted=muted,
+            tooltip=None if muted else format_reset_at(resets_at, now),
         )
 
     # --- Handlinger ------------------------------------------------------

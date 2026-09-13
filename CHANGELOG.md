@@ -7,6 +7,15 @@ og prosjektet følger [semantisk versjonering](https://semver.org/lang/nb/).
 
 ## [Unreleased]
 
+### Changed
+- Målerne i dropdown-menyen er tegnet om til en kolonnerad: etikett, stolpe,
+  prosent og nedtelling står i faste kolonner på én linje, med tabulære sifre
+  i prosentkolonnen. Unicode-blokkene (`▰▱`) er erstattet av en stolpe appen
+  tegner selv, og den blir rød når forbruket har passert 90 %
+- Nullstillingen vises som nedtelling («om 4 t 30 min») i samme rad som
+  måleren. Klokkeslettet ligger i verktøytipset på raden
+- Hver konto tar dermed tre linjer i menyen i stedet for seks
+
 ## [0.3.0] - 2026-09-13
 
 ### Added

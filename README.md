@@ -108,10 +108,12 @@ andre.
 - **Menylinjen** viser sesjon- og uke-forbruk for den aktive kontoen side ved
   side (f.eks. `43 · 76`), med `!` bak et tall som har passert 90 %, eller ⚠️
   ved feil (utløpt cookie, nettverksfeil e.l.)
-- **Dropdown-menyen** viser begge grensene som tekstmålere
-  (`Sesjon  ▰▰▰▰▱▱▱▱▱▱ 43%`) med nullstillingstidspunkt under hver, appen
-  oppdaterer seg selv hvert minutt. Med flere kontoer får hver konto sin egen
-  seksjon, og den aktive er merket med hake — klikk på en annen for å bytte
+- **Dropdown-menyen** viser begge grensene på hver sin linje, med etikett,
+  stolpe, prosent og nedtelling til nullstilling i faste kolonner. Stolpen og
+  prosenten blir røde over 90 %, og klokkeslettet for nullstillingen ligger i
+  verktøytipset på linjen. Appen oppdaterer seg selv hvert minutt. Med flere
+  kontoer får hver konto sin egen seksjon, og den aktive er merket med hake –
+  klikk på en annen for å bytte
 - **Avinstaller** — fjerner LaunchAgent-en og app-ikonet (spør om
   bekreftelse først; selve prosjektmappen og `.env` beholdes)
 

@@ -11,9 +11,11 @@ from claude_usage.accounts import Account
 from claude_usage.config import CredentialsMissingError
 from claude_usage.main import (
     ClaudeUsageApp,
+    format_countdown,
     format_footer,
     format_meter,
-    format_reset,
+    format_percent,
+    format_reset_at,
     format_title,
 )
 from claude_usage.usage_client import UsageAuthError, UsageData, UsageFetchError
@@ -110,17 +112,24 @@ def test_single_account_hides_its_header():
         assert app._account_items["1"].header.hidden is True
 
 
-def test_single_account_hides_reset_line_when_resets_at_missing():
+def test_countdown_column_is_empty_when_resets_at_missing():
     with _app([PRO], _usage()) as (app, _):
         group = app._account_items["1"]
-        assert group.session_reset.hidden is True
-        assert group.weekly_reset.hidden is True
+        assert group.session_line.countdown.stringValue() == ""
+        assert group.weekly_line.countdown.stringValue() == ""
+        assert group.session_line.view.toolTip() is None
 
 
 def test_threshold_crossed_marks_title_and_meter():
+    """I menylinjen er utropstegnet det eneste virkemiddelet. I menyen har
+    raden farge, og da er rødt stolpe- og prosenttall tydeligere."""
     with _app([PRO], _usage(weekly=92)) as (app, _):
+        group = app._account_items["1"]
         assert app.title == "43 · 92!"
-        assert app._account_items["1"].weekly_meter.title.endswith("92%!")
+        assert group.weekly_line.bar.critical is True
+        assert group.weekly_line.percent.textColor() == NSColor.systemRedColor()
+        assert group.session_line.bar.critical is False
+        assert group.session_line.percent.textColor() == NSColor.labelColor()
 
 
 def test_footer_is_never_interactive():
@@ -136,8 +145,8 @@ def test_both_accounts_are_rendered_with_their_own_numbers():
     fetch = _by_cookie(**{"c-pro": _usage(43, 76), "c-team": _usage(12, 8)})
 
     with _app([PRO, TEAM], fetch) as (app, _):
-        assert app._account_items["1"].session_meter.title.endswith("43%")
-        assert app._account_items["2"].session_meter.title.endswith("12%")
+        assert format_percent(43) in app._account_items["1"].session_meter.title
+        assert format_percent(12) in app._account_items["2"].session_meter.title
         assert app._account_items["1"].header.title == "Pro"
         assert app._account_items["2"].header.title == "Team Plan"
         assert app._account_items["1"].header.hidden is False
@@ -202,7 +211,7 @@ def test_failure_on_active_account_shows_warning_title():
 
     with _app([PRO, TEAM], fetch, active_key="1") as (app, _):
         assert app.title == "⚠️"
-        assert app._account_items["2"].session_meter.title.endswith("12%")
+        assert format_percent(12) in app._account_items["2"].session_meter.title
 
 
 def test_fetch_error_is_actionable():
@@ -232,7 +241,7 @@ def test_stale_numbers_survive_a_failed_refresh():
         raise UsageAuthError("expired")
 
     with _app([PRO], fetch) as (app, _):
-        assert app._account_items["1"].session_reset.hidden is False  # før feilen
+        assert app._account_items["1"].session_line.countdown.stringValue() != ""  # før feilen
 
         app.refresh(None)
 
@@ -242,8 +251,9 @@ def test_stale_numbers_survive_a_failed_refresh():
         assert group.stale.hidden is False
         assert group.stale.title.startswith("Klikk for oppskrift · siste tall ")
         assert group.session_meter.hidden is False  # gamle tall vises fortsatt
-        assert group.session_meter_label.textColor() == NSColor.secondaryLabelColor()  # dempet
-        assert group.session_reset.hidden is True  # og uten nullstillingslinje
+        assert group.session_line.label.textColor() == NSColor.secondaryLabelColor()  # dempet
+        assert group.session_line.countdown.stringValue() == ""  # og uten nedtelling
+        assert group.session_line.view.toolTip() is None
         assert app.footer_item.title.startswith("Oppdatert ")
 
 
@@ -287,7 +297,7 @@ def test_menu_is_rebuilt_when_an_account_is_added():
             app.refresh(None)
 
         assert set(app._account_items) == {"1", "2"}
-        assert app._account_items["2"].session_meter.title.endswith("12%")
+        assert format_percent(12) in app._account_items["2"].session_meter.title
         assert app._account_items["2"].session_meter in list(app.menu.values())
 
 
@@ -366,49 +376,51 @@ def test_format_title(session, weekly, expected):
     assert format_title(session, weekly, threshold=90) == expected
 
 
+def test_format_percent_keeps_number_and_sign_together():
+    assert format_percent(43) == "43\u202f%"
+
+
 @pytest.mark.parametrize(
-    "percent, filled_cells, suffix",
+    "percent, countdown, expected",
     [
-        (0, 0, ""),
-        (4, 0, ""),
-        (5, 0, ""),  # round(0.5) = 0 i Python (banker's rounding) — bevisst dokumentert her
-        (43, 4, ""),
-        (89, 9, ""),
-        (90, 9, "!"),
-        (100, 10, "!"),
-        (112, 10, "!"),  # klippes til 10 celler, prosenttallet vises uklippet
+        (0, None, "Sesjon 0\u202f%"),
+        (43, "om 47 min", "Sesjon 43\u202f% · om 47 min"),
+        (112, "nå", "Sesjon 112\u202f% · nå"),  # over 100 vises uklippet
     ],
 )
-def test_format_meter(percent, filled_cells, suffix):
-    result = format_meter("Sesjon", percent, threshold=90)
-    assert result == f"{'Sesjon':<7}{'▰' * filled_cells}{'▱' * (10 - filled_cells)} {percent}%{suffix}"
+def test_format_meter(percent, countdown, expected):
+    assert format_meter("Sesjon", percent, countdown) == expected
 
 
-def test_format_reset_returns_none_when_missing():
-    assert format_reset(None, NOW) is None
+def test_reset_formatters_return_none_when_missing():
+    assert format_countdown(None, NOW) is None
+    assert format_reset_at(None, NOW) is None
 
 
 @pytest.mark.parametrize(
-    "delta, expected_relative",
+    "delta, expected",
     [
         (timedelta(minutes=0), "nå"),
         (timedelta(minutes=-5), "nå"),  # tidspunkt i fortiden, klippes til «nå»
         (timedelta(minutes=47), "om 47 min"),
         (timedelta(hours=1, minutes=47), "om 1 t 47 min"),
+        (timedelta(days=3), "om 3 d"),
     ],
 )
-def test_format_reset_under_24_hours(delta, expected_relative):
-    resets_at = NOW + delta
-    result = format_reset(resets_at, NOW)
-    assert result == f"Nullstilles {_local_clock(resets_at)} ({expected_relative})"
+def test_format_countdown(delta, expected):
+    assert format_countdown(NOW + delta, NOW) == expected
 
 
-def test_format_reset_over_24_hours_includes_weekday():
+def test_format_reset_at_under_24_hours_is_the_clock_alone():
+    resets_at = NOW + timedelta(hours=2)
+    assert format_reset_at(resets_at, NOW) == f"Nullstilles {_local_clock(resets_at)}"
+
+
+def test_format_reset_at_over_24_hours_includes_weekday():
     resets_at = NOW + timedelta(days=3)  # NOW er en fredag => +3 dager = mandag
-    result = format_reset(resets_at, NOW)
     local = resets_at.astimezone()
     weekday = ["man", "tir", "ons", "tor", "fre", "lør", "søn"][local.weekday()]
-    assert result == f"Nullstilles {weekday} {local:%H:%M} (om 3 d)"
+    assert format_reset_at(resets_at, NOW) == f"Nullstilles {weekday} {local:%H:%M}"
 
 
 def test_format_footer_without_timestamp():
@@ -432,14 +444,13 @@ def test_last_account_does_not_add_a_second_separator_before_the_actions():
 
 def test_reading_lines_are_not_clickable():
     """Ingen av avlesningslinjene skal love en handling ved mouse-over.
-    Nullstillinger og footer er avslått; målerne tegner seg selv, og
-    menyelementer med egen visning markeres aldri."""
+    Footeren er avslått; målerne tegner seg selv, og menyelementer med
+    egen visning markeres aldri."""
     resets = datetime.now(timezone.utc) + timedelta(hours=2)
 
     with _app([PRO], _usage(session_resets=resets)) as (app, _):
         group = app._account_items["1"]
-        for item in (group.session_reset, group.weekly_reset, app.footer_item):
-            assert item._menuitem.isEnabled() is False, item.title
+        assert app.footer_item._menuitem.isEnabled() is False
         for item in (group.session_meter, group.weekly_meter):
             assert item._menuitem.view() is not None, item.title
 
@@ -460,9 +471,35 @@ def test_meters_render_in_full_weight_text():
     resets = datetime.now(timezone.utc) + timedelta(hours=2)
 
     with _app([PRO], _usage(session_resets=resets)) as (app, _):
-        group = app._account_items["1"]
-        assert group.session_meter_label.textColor() == NSColor.labelColor()
-        assert group.session_meter_label.stringValue() == group.session_meter.title
+        line = app._account_items["1"].session_line
+        assert line.label.textColor() == NSColor.labelColor()
+        assert line.percent.textColor() == NSColor.labelColor()
+        assert line.countdown.textColor() == NSColor.secondaryLabelColor()
+
+
+def test_meter_columns_hold_the_same_values_as_the_title():
+    """Tittelen er det skjermlesere og tester leser. Kolonnene er det
+    brukeren ser – de to må fortelle det samme."""
+    resets = datetime.now(timezone.utc) + timedelta(hours=2)
+
+    with _app([PRO], _usage(session=43, session_resets=resets)) as (app, _):
+        line = app._account_items["1"].session_line
+        title = app._account_items["1"].session_meter.title
+        assert line.label.stringValue() == "Sesjon"
+        assert line.percent.stringValue() == format_percent(43)
+        assert line.bar.percent == 43
+        assert title == format_meter("Sesjon", 43, line.countdown.stringValue())
+
+
+def test_absolute_reset_time_moves_to_the_tooltip():
+    """Raden viser nedtellingen. Klokkeslettet er fortsatt tilgjengelig,
+    men koster ikke en egen linje."""
+    resets = datetime.now(timezone.utc) + timedelta(hours=2)
+
+    with _app([PRO], _usage(session_resets=resets)) as (app, _):
+        line = app._account_items["1"].session_line
+        assert line.countdown.stringValue().startswith("om ")
+        assert line.view.toolTip() == f"Nullstilles {resets.astimezone():%H:%M}"
 
 
 def test_stale_meters_are_muted_to_signal_old_numbers():
@@ -474,11 +511,11 @@ def test_stale_meters_are_muted_to_signal_old_numbers():
         raise UsageAuthError("expired")
 
     with _app([PRO], fetch) as (app, _):
-        assert app._account_items["1"].session_meter_label.textColor() == NSColor.labelColor()
+        assert app._account_items["1"].session_line.label.textColor() == NSColor.labelColor()
 
         app.refresh(None)
 
-        assert (
-            app._account_items["1"].session_meter_label.textColor()
-            == NSColor.secondaryLabelColor()
-        )
+        line = app._account_items["1"].session_line
+        assert line.label.textColor() == NSColor.secondaryLabelColor()
+        assert line.countdown.textColor() == NSColor.tertiaryLabelColor()
+        assert line.bar.muted is True

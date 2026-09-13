@@ -8,7 +8,15 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import rumps
-from AppKit import NSApplication, NSApplicationActivationPolicyAccessory
+from AppKit import (
+    NSApplication,
+    NSApplicationActivationPolicyAccessory,
+    NSColor,
+    NSFont,
+    NSTextField,
+    NSView,
+)
+from Foundation import NSMakePoint, NSMakeRect
 from PyObjCTools import AppHelper
 
 from claude_usage import __version__, config
@@ -24,6 +32,32 @@ METER_CELLS = 10
 METER_FILLED = "▰"
 METER_EMPTY = "▱"
 WEEKDAY_ABBREVIATIONS = ["man", "tir", "ons", "tor", "fre", "lør", "søn"]
+
+# Innrykk som lar en egentegnet linje flukte med vanlige menyelementer.
+MENU_TEXT_INSET = 21.0
+MENU_TEXT_TRAILING = 24.0
+MENU_TEXT_PADDING = 2.0
+
+
+def make_reading_line() -> tuple[NSView, NSTextField]:
+    """En menylinje vi tegner selv, for tekst som bare skal leses.
+
+    Et vanlig menyelement er enten påskrudd — og får blå markering ved
+    mouse-over, som lover en handling som ikke finnes — eller avslått, og
+    da grår macOS ut teksten uansett hvilken farge vi ber om. Et element
+    med egen visning slipper begge deler: det markeres aldri, og fargen
+    er vår.
+    """
+    label = NSTextField.labelWithString_("")
+    label.setFont_(NSFont.menuFontOfSize_(0))
+    label.setTextColor_(NSColor.labelColor())
+    label.sizeToFit()
+
+    height = label.frame().size.height + 2 * MENU_TEXT_PADDING
+    container = NSView.alloc().initWithFrame_(NSMakeRect(0, 0, 1, height))
+    label.setFrameOrigin_(NSMakePoint(MENU_TEXT_INSET, MENU_TEXT_PADDING))
+    container.addSubview_(label)
+    return container, label
 
 
 def format_title(session: int, weekly: int, threshold: int) -> str:
@@ -97,10 +131,27 @@ class AccountMenuGroup:
         self.mid_separator = rumps.rumps.SeparatorMenuItem()
         self.weekly_meter = rumps.MenuItem(f"uke-{account.key}", callback=None)
         self.weekly_reset = rumps.MenuItem(f"uke-nullstilling-{account.key}", callback=None)
+
+        session_view, self.session_meter_label = make_reading_line()
+        self.session_meter._menuitem.setView_(session_view)
+        weekly_view, self.weekly_meter_label = make_reading_line()
+        self.weekly_meter._menuitem.setView_(weekly_view)
         self.end_separator = rumps.rumps.SeparatorMenuItem()
 
         for item in (self.header, self.error, self.stale):
             item.hidden = True
+        # Menyen styrer av/på selv (autoenablesItems=False), så alt som
+        # ikke skal kunne klikkes må slås av eksplisitt — også mens det
+        # er skjult.
+        for item in (
+            self.error,
+            self.stale,
+            self.session_meter,
+            self.session_reset,
+            self.weekly_meter,
+            self.weekly_reset,
+        ):
+            item._menuitem.setEnabled_(False)
 
     def entries(self) -> list[tuple[str, object]]:
         """(menynøkkel, element) i visningsrekkefølge.
@@ -151,6 +202,8 @@ class ClaudeUsageApp(rumps.App):
         self.quit_item = rumps.MenuItem("Avslutt", callback=rumps.quit_application)
         self.footer_separator = rumps.rumps.SeparatorMenuItem()
         self.footer_item = rumps.MenuItem(format_footer(__version__, None), callback=None)
+        self.footer_item._menuitem.setEnabled_(False)
+        self.error_item._menuitem.setEnabled_(False)
 
         self._rebuild_menu([])
 
@@ -232,7 +285,9 @@ class ClaudeUsageApp(rumps.App):
             )
 
         self._footer_updated_at = active_result.updated_at
-        self.footer_item.title = format_footer(__version__, self._footer_updated_at)
+        self._set_muted_title(
+            self.footer_item, format_footer(__version__, self._footer_updated_at)
+        )
 
     def _render_account(
         self,
@@ -251,15 +306,16 @@ class ClaudeUsageApp(rumps.App):
 
         if result.error is not None:
             group.error.hidden = False
-            group.error.title = result.error
-            group.error.set_callback(
+            self._set_action_title(
+                group.error,
+                result.error,
                 functools.partial(self._show_help, result.account.key)
                 if result.actionable
-                else None
+                else None,
             )
         else:
             group.error.hidden = True
-            group.error.set_callback(None)
+            self._set_action_title(group.error, group.error.title, None)
 
         if result.usage is None:
             group.stale.hidden = True
@@ -270,49 +326,49 @@ class ClaudeUsageApp(rumps.App):
         if stale:
             prefix = "Klikk for oppskrift · " if result.actionable else ""
             updated = f"{result.updated_at.astimezone():%H:%M}" if result.updated_at else "–"
-            group.stale.title = f"{prefix}siste tall {updated}"
             group.stale.hidden = False
-            group.stale.set_callback(
+            self._set_action_title(
+                group.stale,
+                f"{prefix}siste tall {updated}",
                 functools.partial(self._show_help, result.account.key)
                 if result.actionable
-                else None
+                else None,
             )
         else:
             group.stale.hidden = True
 
-        # Dempet tekst signaliserer «gamle tall»: rumps grår ut ethvert
-        # MenuItem med callback=None.
-        meter_callback = None if stale else self._noop
-
+        # Gamle tall dempes, ferske står i full vekt.
         group.session_meter.hidden = False
-        group.session_meter.title = format_meter(
-            "Sesjon", result.usage.session_percent, THRESHOLD_PERCENT
+        self._set_meter(
+            group.session_meter,
+            group.session_meter_label,
+            format_meter("Sesjon", result.usage.session_percent, THRESHOLD_PERCENT),
+            muted=stale,
         )
-        group.session_meter.set_callback(meter_callback)
         group.weekly_meter.hidden = False
-        group.weekly_meter.title = format_meter(
-            "Uke", result.usage.weekly_percent, THRESHOLD_PERCENT
+        self._set_meter(
+            group.weekly_meter,
+            group.weekly_meter_label,
+            format_meter("Uke", result.usage.weekly_percent, THRESHOLD_PERCENT),
+            muted=stale,
         )
-        group.weekly_meter.set_callback(meter_callback)
 
         session_reset = None if stale else format_reset(result.usage.session_resets_at, now)
         group.session_reset.hidden = session_reset is None
         if session_reset is not None:
-            group.session_reset.title = session_reset
+            self._set_muted_title(group.session_reset, session_reset)
 
         weekly_reset = None if stale else format_reset(result.usage.weekly_resets_at, now)
         group.weekly_reset.hidden = weekly_reset is None
         if weekly_reset is not None:
-            group.weekly_reset.title = weekly_reset
+            self._set_muted_title(group.weekly_reset, weekly_reset)
 
         group.mid_separator._menuitem.setHidden_(stale)
 
     def _hide_meters(self, group: AccountMenuGroup) -> None:
         group.session_meter.hidden = True
-        group.session_meter.set_callback(None)
         group.session_reset.hidden = True
         group.weekly_meter.hidden = True
-        group.weekly_meter.set_callback(None)
         group.weekly_reset.hidden = True
         group.mid_separator._menuitem.setHidden_(True)
 
@@ -320,9 +376,12 @@ class ClaudeUsageApp(rumps.App):
         """Feil som gjelder hele appen — i praksis «ingen kontoer i .env»."""
         self.title = "⚠️"
         self.error_item.hidden = False
-        self.error_item.title = message
-        self.error_item.set_callback(self._show_setup_help if actionable else None)
-        self.footer_item.title = format_footer(__version__, self._footer_updated_at)
+        self._set_action_title(
+            self.error_item, message, self._show_setup_help if actionable else None
+        )
+        self._set_muted_title(
+            self.footer_item, format_footer(__version__, self._footer_updated_at)
+        )
 
     # --- Meny ------------------------------------------------------------
 
@@ -344,6 +403,9 @@ class ClaudeUsageApp(rumps.App):
         # `self.menu = [...]` legger til i stedet for å erstatte, så clear()
         # er nødvendig. clear() beholder samme NSMenu, som statuslinjen
         # allerede peker på — derfor er dette trygt på en kjørende app.
+        # Uten dette slår macOS av elementer uten action ved visning, og
+        # overstyrer fargen vi setter selv.
+        self.menu._menu.setAutoenablesItems_(False)
         self.menu.clear()
         self.menu["app-feil"] = self.error_item
         for account in accounts:
@@ -361,8 +423,33 @@ class ClaudeUsageApp(rumps.App):
         self._render(self._last_results)
 
     @staticmethod
-    def _noop(_sender) -> None:
-        return None
+    def _set_action_title(item, text: str, callback) -> None:
+        """Klikkbar linje. Av/på følger om det finnes noe å klikke på."""
+        item.title = text
+        item.set_callback(callback)
+        item._menuitem.setEnabled_(callback is not None)
+
+    @staticmethod
+    def _set_muted_title(item, text: str) -> None:
+        """Sekundær tekst: avslått, så macOS grår den ut og den markeres ikke."""
+        item.title = text
+        item._menuitem.setEnabled_(False)
+
+    @staticmethod
+    def _set_meter(item, label, text: str, *, muted: bool) -> None:
+        """Oppdater en egentegnet målerlinje og la elementet vokse med teksten."""
+        item.title = text  # bevart for tilgjengelighet og tester
+        label.setStringValue_(text)
+        label.setTextColor_(
+            NSColor.secondaryLabelColor() if muted else NSColor.labelColor()
+        )
+        label.sizeToFit()
+
+        size = label.frame().size
+        container = item._menuitem.view()
+        container.setFrameSize_(
+            (size.width + MENU_TEXT_INSET + MENU_TEXT_TRAILING, size.height + 2 * MENU_TEXT_PADDING)
+        )
 
     # --- Handlinger ------------------------------------------------------
 

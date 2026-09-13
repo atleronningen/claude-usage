@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 
 import pytest
+from AppKit import NSColor
 
 from claude_usage import __version__
 from claude_usage.accounts import Account
@@ -122,15 +123,10 @@ def test_threshold_crossed_marks_title_and_meter():
         assert app._account_items["1"].weekly_meter.title.endswith("92%!")
 
 
-def test_meter_items_are_not_dimmed_in_normal_state():
-    """Målerlinjene skal være fullvekt — rumps grår ut ethvert MenuItem
-    med callback=None (dokumentert i rumps.set_callback)."""
+def test_footer_is_never_interactive():
     with _app([PRO], _usage()) as (app, _):
-        group = app._account_items["1"]
-        assert group.session_meter.callback is not None
-        assert group.weekly_meter.callback is not None
-        assert group.session_reset.callback is None
         assert app.footer_item.callback is None
+        assert app.footer_item._menuitem.isEnabled() is False
 
 
 # --- Flere kontoer --------------------------------------------------------
@@ -246,7 +242,7 @@ def test_stale_numbers_survive_a_failed_refresh():
         assert group.stale.hidden is False
         assert group.stale.title.startswith("Klikk for oppskrift · siste tall ")
         assert group.session_meter.hidden is False  # gamle tall vises fortsatt
-        assert group.session_meter.callback is None  # men dempet
+        assert group.session_meter_label.textColor() == NSColor.secondaryLabelColor()  # dempet
         assert group.session_reset.hidden is True  # og uten nullstillingslinje
         assert app.footer_item.title.startswith("Oppdatert ")
 
@@ -432,3 +428,57 @@ def test_last_account_does_not_add_a_second_separator_before_the_actions():
     with _app([PRO, TEAM], fetch) as (app, _):
         assert app._account_items["1"].end_separator._menuitem.isHidden() is False
         assert app._account_items["2"].end_separator._menuitem.isHidden() is True
+
+
+def test_reading_lines_are_not_clickable():
+    """Ingen av avlesningslinjene skal love en handling ved mouse-over.
+    Nullstillinger og footer er avslått; målerne tegner seg selv, og
+    menyelementer med egen visning markeres aldri."""
+    resets = datetime.now(timezone.utc) + timedelta(hours=2)
+
+    with _app([PRO], _usage(session_resets=resets)) as (app, _):
+        group = app._account_items["1"]
+        for item in (group.session_reset, group.weekly_reset, app.footer_item):
+            assert item._menuitem.isEnabled() is False, item.title
+        for item in (group.session_meter, group.weekly_meter):
+            assert item._menuitem.view() is not None, item.title
+
+
+def test_lines_that_do_something_stay_clickable():
+    fetch = _by_cookie(**{"c-pro": _usage(), "c-team": _usage()})
+
+    with _app([PRO, TEAM], fetch) as (app, _):
+        assert app._account_items["1"].header._menuitem.isEnabled() is True
+        assert app._account_items["2"].header._menuitem.isEnabled() is True
+        assert app.uninstall_item._menuitem.isEnabled() is True
+        assert app.quit_item._menuitem.isEnabled() is True
+
+
+def test_meters_render_in_full_weight_text():
+    """macOS demper avslåtte elementer uansett farge i attributtstrengen.
+    Derfor tegnes målerne i en egen visning, der fargen faktisk gjelder."""
+    resets = datetime.now(timezone.utc) + timedelta(hours=2)
+
+    with _app([PRO], _usage(session_resets=resets)) as (app, _):
+        group = app._account_items["1"]
+        assert group.session_meter_label.textColor() == NSColor.labelColor()
+        assert group.session_meter_label.stringValue() == group.session_meter.title
+
+
+def test_stale_meters_are_muted_to_signal_old_numbers():
+    responses = [_usage()]
+
+    def fetch(_cookie, _api_url):
+        if responses:
+            return responses.pop()
+        raise UsageAuthError("expired")
+
+    with _app([PRO], fetch) as (app, _):
+        assert app._account_items["1"].session_meter_label.textColor() == NSColor.labelColor()
+
+        app.refresh(None)
+
+        assert (
+            app._account_items["1"].session_meter_label.textColor()
+            == NSColor.secondaryLabelColor()
+        )

@@ -25,6 +25,14 @@ og prosjektet følger [semantisk versjonering](https://semver.org/lang/nb/).
   feiler — også for gamle oppsett, der nøklene heter noe annet
 - Menylinjen er uendret for oppsett med én konto: ingen kontolinje, ingen haker
 
+### Fixed
+- Målerlinjene ga blå markering ved mouse-over uten å være klikkbare. De
+  tegnes nå i en egen visning, som lar dem stå i full tekstvekt uten å love
+  en handling som ikke finnes. Bare kontolinjer, feilmeldinger og
+  menyvalgene markeres
+- Feilmeldingslinjene kunne bli klikkbare uten å være påskrudd, siden menyen
+  nå styrer av/på selv i stedet for å overlate det til macOS
+
 ### Removed
 - `config.load_credentials()` (internt) — erstattet av `load_accounts()`
 

@@ -7,6 +7,27 @@ og prosjektet følger [semantisk versjonering](https://semver.org/lang/nb/).
 
 ## [Unreleased]
 
+### Added
+- Støtte for flere Claude-kontoer. Hver konto settes opp med en nummerert
+  blokk i `.env` (`CLAUDE_USAGE_ACCOUNT_<N>_LABEL`/`_COOKIE`/`_API_URL`)
+- Dropdown-menyen viser alle kontoer med egne målere og
+  nullstillingstidspunkt. Aktiv konto er merket med hake, og et klikk på en
+  annen konto bytter hvilken menylinjetittelen viser
+- Valget av aktiv konto huskes i `~/.claude-usage/state.json` og overlever
+  omstart
+
+### Changed
+- Kontoene hentes parallelt i en bakgrunnstråd. Menylinjen fryser ikke lenger
+  mens hentingen pågår, og totaltiden er den samme uansett antall kontoer
+- Feil håndteres per konto: en utløpt cookie på én konto skjuler ikke tallene
+  til de andre, og menylinjetittelen påvirkes bare av den aktive kontoen
+- Hjelpeteksten ved utløpt cookie navngir nøklene til nettopp den kontoen som
+  feiler — også for gamle oppsett, der nøklene heter noe annet
+- Menylinjen er uendret for oppsett med én konto: ingen kontolinje, ingen haker
+
+### Removed
+- `config.load_credentials()` (internt) — erstattet av `load_accounts()`
+
 ## [0.2.2] - 2026-07-28
 
 ### Fixed

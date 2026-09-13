@@ -3,8 +3,9 @@
 [github.com/atleronningen/claude-usage](https://github.com/atleronningen/claude-usage)
 
 En liten macOS-menylinje-app som viser hvor mye av Claude.ai-abonnementet
-(Pro/Max) du har brukt opp — både session-grensen (5 timer) og den
-ukentlige grensen, oppdatert hvert minutt.
+du har brukt opp — både session-grensen (5 timer) og den ukentlige
+grensen, oppdatert hvert minutt. Har du flere kontoer, vises alle i
+dropdown-menyen.
 
 ```
 43 · 76
@@ -62,24 +63,55 @@ Første gang må du selv hente en cookie fra nettleseren din:
 2. Last siden på nytt, klikk på `usage`-forespørselen
 3. Under **Headers** → **Request Headers**: kopier hele
    `Cookie`-verdien
-4. Lim den inn som `CLAUDE_USAGE_COOKIE` i `.env`-filen (opprettet av
-   `./install`)
+4. Lim den inn som `CLAUDE_USAGE_ACCOUNT_1_COOKIE` i `.env`-filen
+   (opprettet av `./install`)
 5. Under **Headers**: kopier feltet **Request URL** (øverst i panelet)
-   og lim den inn som `CLAUDE_USAGE_API_URL` (ser slik ut:
+   og lim den inn som `CLAUDE_USAGE_ACCOUNT_1_API_URL` (ser slik ut:
    `https://claude.ai/api/organizations/<org-id>/usage`)
+6. Gi kontoen et navn i `CLAUDE_USAGE_ACCOUNT_1_LABEL` — det vises i
+   menyen, så plantypen er et greit valg: `Pro`, `Max`, `Team Plan`
 
 Cookien utløper med jevne mellomrom. Når appen viser ⚠️ i menylinjen,
 klikk på feilmeldingen i dropdown-menyen — den åpner `.env` i TextEdit
-og viser samme oppskrift som over.
+og viser oppskriften for nettopp den kontoen.
+
+Har du en eldre `.env` med `CLAUDE_USAGE_COOKIE` og
+`CLAUDE_USAGE_API_URL` uten nummer, virker den fortsatt som den er —
+den tolkes som én konto.
+
+### Flere kontoer
+
+Legg til en blokk per konto, nummerert fortløpende:
+
+```
+CLAUDE_USAGE_ACCOUNT_1_LABEL=Pro
+CLAUDE_USAGE_ACCOUNT_1_COOKIE=...
+CLAUDE_USAGE_ACCOUNT_1_API_URL=https://claude.ai/api/organizations/<org-id>/usage
+
+CLAUDE_USAGE_ACCOUNT_2_LABEL=Team Plan
+CLAUDE_USAGE_ACCOUNT_2_COOKIE=...
+CLAUDE_USAGE_ACCOUNT_2_API_URL=https://claude.ai/api/organizations/<annen-org-id>/usage
+```
+
+Hver konto trenger sin egen cookie, hentet mens du er logget inn som
+den kontoen. claude.ai holder bare én innlogging per nettleserprofil,
+så bruk to profiler (eller et privat vindu) når du henter den andre.
+
+Alle kontoer hentes hvert minutt, parallelt. Menylinjetittelen viser
+den kontoen som er merket med hake i dropdown-menyen — klikk på en
+annen konto for å bytte. Valget huskes i `~/.claude-usage/state.json`
+og overlever omstart. En utløpt cookie på én konto påvirker ikke de
+andre.
 
 ## Bruk
 
-- **Menylinjen** viser sesjon- og uke-forbruk side ved side (f.eks. `43 · 76`),
-  med `!` bak et tall som har passert 90 %, eller ⚠️ ved feil (utløpt cookie,
-  nettverksfeil e.l.)
+- **Menylinjen** viser sesjon- og uke-forbruk for den aktive kontoen side ved
+  side (f.eks. `43 · 76`), med `!` bak et tall som har passert 90 %, eller ⚠️
+  ved feil (utløpt cookie, nettverksfeil e.l.)
 - **Dropdown-menyen** viser begge grensene som tekstmålere
   (`Sesjon  ▰▰▰▰▱▱▱▱▱▱ 43%`) med nullstillingstidspunkt under hver, appen
-  oppdaterer seg selv hvert minutt
+  oppdaterer seg selv hvert minutt. Med flere kontoer får hver konto sin egen
+  seksjon, og den aktive er merket med hake — klikk på en annen for å bytte
 - **Avinstaller** — fjerner LaunchAgent-en og app-ikonet (spør om
   bekreftelse først; selve prosjektmappen og `.env` beholdes)
 

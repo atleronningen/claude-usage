@@ -22,10 +22,21 @@ usage-API er bak Cloudflare-beskyttelse som blokkerer på TLS-fingerprint
 ## Struktur
 
 - `claude_usage/usage_client.py` — henter og parser usage-data fra claude.ai
-- `claude_usage/config.py` — credentials (.env)
+  for én konto (statsløs, kjenner ikke kontobegrepet)
+- `claude_usage/accounts.py` — `Account`/`AccountUsage` og parallell henting
+  for alle kontoer (`fetch_all`), samt oppløsning av aktiv konto
+- `claude_usage/config.py` — kontoer fra .env (`load_accounts`) og aktivt
+  kontovalg i `~/.claude-usage/state.json`
 - `claude_usage/main.py` — rumps-appen (menylinje-UI)
 - `scripts/` — LaunchAgent-plist og installasjonsskript
-- `.env` (gitignored) — `CLAUDE_USAGE_COOKIE` og `CLAUDE_USAGE_API_URL`, se `.env.example`
+- `.env` (gitignored) — én blokk per konto:
+  `CLAUDE_USAGE_ACCOUNT_<N>_LABEL` / `_COOKIE` / `_API_URL`, se `.env.example`.
+  Gamle unummererte `CLAUDE_USAGE_COOKIE`/`CLAUDE_USAGE_API_URL` tolkes som
+  én konto, så eksisterende oppsett virker uendret.
+
+Hentingen kjører i bakgrunnstråd. Alt som rører rumps skjer i `_apply` og
+metodene den kaller, marshallet tilbake til hovedtråden med
+`AppHelper.callAfter` — AppKit er ikke trådsikkert.
 
 LaunchAgent-plisten (`~/Library/LaunchAgents/local.claude-usage.plist`) får
 prosjektmappens absolutte sti hardkodet av `install_launch_agent.sh` ved

@@ -15,7 +15,7 @@ venv/bin/pip install -r requirements-dev.txt --quiet
 
 if [ ! -f .env ]; then
     cp .env.example .env
-    echo "Opprettet .env fra .env.example — husk å fylle inn CLAUDE_USAGE_COOKIE og CLAUDE_USAGE_API_URL før du starter appen."
+    echo "Opprettet .env fra .env.example — husk å fylle inn CLAUDE_USAGE_ACCOUNT_1_COOKIE og CLAUDE_USAGE_ACCOUNT_1_API_URL før du starter appen."
 fi
 chmod 600 .env
 

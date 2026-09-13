@@ -1,9 +1,12 @@
+import threading
+from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 
 import pytest
 
 from claude_usage import __version__
+from claude_usage.accounts import Account
 from claude_usage.config import CredentialsMissingError
 from claude_usage.main import (
     ClaudeUsageApp,
@@ -16,19 +19,22 @@ from claude_usage.usage_client import UsageAuthError, UsageData, UsageFetchError
 
 NOW = datetime(2026, 7, 24, 12, 33, 0, tzinfo=timezone.utc)
 
+def _account(key, label, cookie, api_url):
+    return Account(
+        key=key,
+        label=label,
+        cookie=cookie,
+        api_url=api_url,
+        cookie_env_key=f"CLAUDE_USAGE_ACCOUNT_{key}_COOKIE",
+        api_url_env_key=f"CLAUDE_USAGE_ACCOUNT_{key}_API_URL",
+    )
+
+PRO = _account("1", "Pro", "c-pro", "https://x/1/usage")
+TEAM = _account("2", "Team Plan", "c-team", "https://x/2/usage")
+
 
 def _local_clock(dt: datetime) -> str:
     return f"{dt.astimezone():%H:%M}"
-
-
-def test_footer_shows_version():
-    with patch(
-        "claude_usage.main.config.load_credentials",
-        side_effect=CredentialsMissingError("mangler"),
-    ):
-        app = ClaudeUsageApp()
-
-    assert app.footer_item.title == f"App v{__version__}"
 
 
 def _usage(session=43, weekly=76, session_resets=None, weekly_resets=None):
@@ -40,129 +46,316 @@ def _usage(session=43, weekly=76, session_resets=None, weekly_resets=None):
     )
 
 
-def test_normal_state_shows_data_and_hides_error():
-    with patch("claude_usage.main.config.load_credentials", return_value=("c", "u")), \
-         patch("claude_usage.main.fetch_usage", return_value=_usage()):
-        app = ClaudeUsageApp()
+def _by_cookie(**mapping):
+    """Lag en fetch_usage-stubb som svarer ulikt per konto.
 
-    assert app.title == "43 · 76"
-    assert app.error_item.hidden is True
-    assert app.help_item.hidden is True
-    assert app.session_meter_item.hidden is False
-    assert app.session_meter_item.title.startswith("Sesjon")
-    assert app.weekly_meter_item.hidden is False
-    assert app.footer_item.title.startswith("Oppdatert ")
-    assert app.footer_item.title.endswith(f"App v{__version__}")
+    Verdier som er unntak kastes; alt annet returneres.
+    """
+    def side_effect(cookie, _api_url):
+        result = mapping[cookie]
+        if isinstance(result, Exception):
+            raise result
+        return result
+
+    return side_effect
 
 
-def test_normal_state_hides_reset_line_when_resets_at_missing():
-    with patch("claude_usage.main.config.load_credentials", return_value=("c", "u")), \
-         patch("claude_usage.main.fetch_usage", return_value=_usage()):
-        app = ClaudeUsageApp()
+def _sync(fn):
+    """Kjør «bakgrunnsarbeid» med én gang, i kallerens tråd.
 
-    assert app.session_reset_item.hidden is True
-    assert app.weekly_reset_item.hidden is True
+    Appen tar planleggingen inn som en søm, så testene bruker nøyaktig
+    samme kodesti som produksjon — bare uten event-loop og tråder.
+    """
+    fn()
+
+
+@contextmanager
+def _app(accounts, fetch, active_key=None):
+    """Start appen med gitte kontoer og et stubbet usage-endepunkt.
+
+    `fetch` patcher `claude_usage.accounts.fetch_usage`, altså så nær
+    nettverkskanten som mulig — resten av hentestien er ekte kode.
+    """
+    if not callable(fetch):
+        fetch = _by_cookie(**{a.cookie: fetch for a in accounts})
+
+    with patch("claude_usage.main.config.load_accounts", return_value=accounts), \
+         patch("claude_usage.main.config.load_active_account_key", return_value=active_key), \
+         patch("claude_usage.main.config.save_active_account_key") as save, \
+         patch("claude_usage.accounts.fetch_usage", side_effect=fetch):
+        yield ClaudeUsageApp(background=_sync, on_main=_sync), save
+
+
+# --- Én konto: uendret oppførsel -----------------------------------------
+
+
+def test_single_account_shows_data_and_hides_error():
+    with _app([PRO], _usage()) as (app, _):
+        group = app._account_items["1"]
+
+        assert app.title == "43 · 76"
+        assert app.error_item.hidden is True
+        assert group.error.hidden is True
+        assert group.session_meter.hidden is False
+        assert group.session_meter.title.startswith("Sesjon")
+        assert group.weekly_meter.hidden is False
+        assert app.footer_item.title.startswith("Oppdatert ")
+        assert app.footer_item.title.endswith(f"App v{__version__}")
+
+
+def test_single_account_hides_its_header():
+    """Med bare én konto skal menyen se ut nøyaktig som før — ingen kontolinje."""
+    with _app([PRO], _usage()) as (app, _):
+        assert app._account_items["1"].header.hidden is True
+
+
+def test_single_account_hides_reset_line_when_resets_at_missing():
+    with _app([PRO], _usage()) as (app, _):
+        group = app._account_items["1"]
+        assert group.session_reset.hidden is True
+        assert group.weekly_reset.hidden is True
 
 
 def test_threshold_crossed_marks_title_and_meter():
-    with patch("claude_usage.main.config.load_credentials", return_value=("c", "u")), \
-         patch("claude_usage.main.fetch_usage", return_value=_usage(weekly=92)):
-        app = ClaudeUsageApp()
-
-    assert app.title == "43 · 92!"
-    assert app.weekly_meter_item.title.endswith("92%!")
+    with _app([PRO], _usage(weekly=92)) as (app, _):
+        assert app.title == "43 · 92!"
+        assert app._account_items["1"].weekly_meter.title.endswith("92%!")
 
 
-def test_error_state_before_any_fetch_hides_all_data_lines():
-    with patch(
-        "claude_usage.main.config.load_credentials",
-        side_effect=CredentialsMissingError("mangler"),
-    ):
-        app = ClaudeUsageApp()
+def test_meter_items_are_not_dimmed_in_normal_state():
+    """Målerlinjene skal være fullvekt — rumps grår ut ethvert MenuItem
+    med callback=None (dokumentert i rumps.set_callback)."""
+    with _app([PRO], _usage()) as (app, _):
+        group = app._account_items["1"]
+        assert group.session_meter.callback is not None
+        assert group.weekly_meter.callback is not None
+        assert group.session_reset.callback is None
+        assert app.footer_item.callback is None
 
-    assert app.title == "⚠️"
-    assert app.error_item.hidden is False
-    assert app.error_item.title == "mangler"
-    assert app.help_item.hidden is True
-    assert app.session_meter_item.hidden is True
-    assert app.weekly_meter_item.hidden is True
-    assert app.footer_item.title == f"App v{__version__}"
+
+# --- Flere kontoer --------------------------------------------------------
+
+
+def test_both_accounts_are_rendered_with_their_own_numbers():
+    fetch = _by_cookie(**{"c-pro": _usage(43, 76), "c-team": _usage(12, 8)})
+
+    with _app([PRO, TEAM], fetch) as (app, _):
+        assert app._account_items["1"].session_meter.title.endswith("43%")
+        assert app._account_items["2"].session_meter.title.endswith("12%")
+        assert app._account_items["1"].header.title == "Pro"
+        assert app._account_items["2"].header.title == "Team Plan"
+        assert app._account_items["1"].header.hidden is False
+
+
+def test_title_follows_the_active_account():
+    fetch = _by_cookie(**{"c-pro": _usage(43, 76), "c-team": _usage(12, 8)})
+
+    with _app([PRO, TEAM], fetch, active_key="2") as (app, _):
+        assert app.title == "12 · 8"
+
+
+def test_active_account_is_checked_and_others_are_not():
+    fetch = _by_cookie(**{"c-pro": _usage(), "c-team": _usage()})
+
+    with _app([PRO, TEAM], fetch, active_key="2") as (app, _):
+        assert app._account_items["1"].header.state == 0
+        assert app._account_items["2"].header.state == 1
+
+
+def test_selecting_another_account_switches_title_and_persists_choice():
+    fetch = _by_cookie(**{"c-pro": _usage(43, 76), "c-team": _usage(12, 8)})
+
+    with _app([PRO, TEAM], fetch) as (app, save):
+        assert app.title == "43 · 76"
+
+        app._account_items["2"].header.callback(app._account_items["2"].header)
+
+        assert app.title == "12 · 8"
+        assert app._account_items["2"].header.state == 1
+        assert app._account_items["1"].header.state == 0
+        save.assert_called_once_with("2")
+
+
+def test_accounts_with_identical_meters_both_stay_visible():
+    """rumps nøkler menyelementer på tittel — to like målerlinjer må ikke
+    kollidere slik at den ene stille forsvinner fra menyen."""
+    fetch = _by_cookie(**{"c-pro": _usage(8, 8), "c-team": _usage(8, 8)})
+
+    with _app([PRO, TEAM], fetch) as (app, _):
+        items = list(app.menu.values())
+        assert app._account_items["1"].session_meter in items
+        assert app._account_items["2"].session_meter in items
+        assert app._account_items["1"].session_meter.title == app._account_items["2"].session_meter.title
+
+
+# --- Feil per konto -------------------------------------------------------
+
+
+def test_failure_on_inactive_account_leaves_title_intact():
+    fetch = _by_cookie(**{"c-pro": _usage(43, 76), "c-team": UsageAuthError("expired")})
+
+    with _app([PRO, TEAM], fetch, active_key="1") as (app, _):
+        assert app.title == "43 · 76"
+        assert app._account_items["2"].error.hidden is False
+        assert app._account_items["2"].error.title == "Cookien utløpt – oppdater"
+        assert app._account_items["1"].error.hidden is True
+
+
+def test_failure_on_active_account_shows_warning_title():
+    fetch = _by_cookie(**{"c-pro": UsageAuthError("expired"), "c-team": _usage(12, 8)})
+
+    with _app([PRO, TEAM], fetch, active_key="1") as (app, _):
+        assert app.title == "⚠️"
+        assert app._account_items["2"].session_meter.title.endswith("12%")
 
 
 def test_fetch_error_is_actionable():
-    """En UsageFetchError (f.eks. HTTP 400 pga. feil org-ID i .env) skal
-    kunne klikkes for å åpne oppskriften, akkurat som utløpt cookie."""
-    with patch("claude_usage.main.config.load_credentials", return_value=("c", "u")), \
-         patch(
-             "claude_usage.main.fetch_usage",
-             side_effect=UsageFetchError("Uventet HTTP-status: 400"),
-         ):
-        app = ClaudeUsageApp()
-
-    assert app.error_item.title == "Uventet HTTP-status: 400"
-    assert app.error_item.callback is not None
+    """En UsageFetchError (f.eks. feil org-ID) skal kunne klikkes for å
+    åpne oppskriften, akkurat som utløpt cookie."""
+    with _app([PRO], UsageFetchError("Uventet HTTP-status: 400")) as (app, _):
+        group = app._account_items["1"]
+        assert group.error.title == "Uventet HTTP-status: 400"
+        assert group.error.callback is not None
 
 
-def test_error_state_with_prior_data_shows_stale_meters_without_resets():
+def test_error_before_any_data_hides_that_accounts_lines():
+    with _app([PRO], UsageAuthError("expired")) as (app, _):
+        group = app._account_items["1"]
+        assert app.title == "⚠️"
+        assert group.session_meter.hidden is True
+        assert group.weekly_meter.hidden is True
+        assert app.footer_item.title == f"App v{__version__}"
+
+
+def test_stale_numbers_survive_a_failed_refresh():
     responses = [_usage(session_resets=datetime.now(timezone.utc) + timedelta(hours=1))]
 
-    def fetch_side_effect(*args, **kwargs):
+    def fetch(_cookie, _api_url):
         if responses:
             return responses.pop()
         raise UsageAuthError("expired")
 
-    with patch("claude_usage.main.config.load_credentials", return_value=("c", "u")), \
-         patch("claude_usage.main.fetch_usage", side_effect=fetch_side_effect):
-        app = ClaudeUsageApp()
-        assert app.session_reset_item.hidden is False  # sanity check før feilen inntreffer
+    with _app([PRO], fetch) as (app, _):
+        assert app._account_items["1"].session_reset.hidden is False  # før feilen
 
-        app.refresh(None)  # andre kall: responses er tom, kaster UsageAuthError
+        app.refresh(None)
+
+        group = app._account_items["1"]
+        assert app.title == "⚠️"
+        assert group.error.title == "Cookien utløpt – oppdater"
+        assert group.stale.hidden is False
+        assert group.stale.title.startswith("Klikk for oppskrift · siste tall ")
+        assert group.session_meter.hidden is False  # gamle tall vises fortsatt
+        assert group.session_meter.callback is None  # men dempet
+        assert group.session_reset.hidden is True  # og uten nullstillingslinje
+        assert app.footer_item.title.startswith("Oppdatert ")
+
+
+def test_missing_credentials_shows_app_level_error():
+    with patch(
+        "claude_usage.main.config.load_accounts",
+        side_effect=CredentialsMissingError("Mangler cookie/API-URL i .env"),
+    ), patch("claude_usage.main.config.load_active_account_key", return_value=None):
+        app = ClaudeUsageApp()
 
     assert app.title == "⚠️"
     assert app.error_item.hidden is False
-    assert app.error_item.title == "Cookien utløpt – oppdater"
-    assert app.help_item.hidden is False
-    assert app.help_item.title.startswith("Klikk for oppskrift · siste tall ")
-    assert app.session_meter_item.hidden is False  # gamle tall vises fortsatt
-    assert app.session_reset_item.hidden is True  # men uten nullstillingslinje
-    assert app.footer_item.title.startswith("Oppdatert ")
+    assert app.error_item.title == "Mangler cookie/API-URL i .env"
+    assert app._account_items == {}
+    assert app.footer_item.title == f"App v{__version__}"
 
 
-def test_normal_state_meter_items_are_not_dimmed():
-    """Målerlinjene («Sesjon 43%») skal se ut som fullvekt/mørk tekst i
-    normaltilstand — det krever en reell callback, siden rumps grår ut
-    ethvert MenuItem med callback=None (dokumentert i rumps.set_callback)."""
-    with patch("claude_usage.main.config.load_credentials", return_value=("c", "u")), \
-         patch("claude_usage.main.fetch_usage", return_value=_usage()):
-        app = ClaudeUsageApp()
-
-    assert app.session_meter_item.callback is not None
-    assert app.weekly_meter_item.callback is not None
-    # Nullstillingslinjer og footer skal derimot alltid være dempet
-    assert app.session_reset_item.callback is None
-    assert app.weekly_reset_item.callback is None
-    assert app.footer_item.callback is None
+# --- Menyrebygging --------------------------------------------------------
 
 
-def test_error_state_meter_items_are_dimmed():
-    """I feiltilstand (gamle tall) skal målerlinjene se dempet ut, i
-    kontrast til normaltilstand."""
-    responses = [_usage()]
+def test_menu_is_not_rebuilt_when_account_set_is_unchanged():
+    with _app([PRO], _usage()) as (app, _):
+        before = app._account_items["1"].session_meter
 
-    def fetch_side_effect(*args, **kwargs):
-        if responses:
-            return responses.pop()
-        raise UsageAuthError("expired")
+        app.refresh(None)
 
-    with patch("claude_usage.main.config.load_credentials", return_value=("c", "u")), \
-         patch("claude_usage.main.fetch_usage", side_effect=fetch_side_effect):
-        app = ClaudeUsageApp()
-        assert app.session_meter_item.callback is not None  # normaltilstand: ikke dempet
+        assert app._account_items["1"].session_meter is before
 
-        app.refresh(None)  # andre kall: responses er tom, kaster UsageAuthError
 
-    assert app.session_meter_item.callback is None
-    assert app.weekly_meter_item.callback is None
+def test_menu_is_rebuilt_when_an_account_is_added():
+    fetch = _by_cookie(**{"c-pro": _usage(), "c-team": _usage(12, 8)})
+
+    with patch("claude_usage.main.config.load_accounts", return_value=[PRO]), \
+         patch("claude_usage.main.config.load_active_account_key", return_value=None), \
+         patch("claude_usage.main.config.save_active_account_key"), \
+         patch("claude_usage.accounts.fetch_usage", side_effect=fetch):
+        app = ClaudeUsageApp(background=_sync, on_main=_sync)
+        assert set(app._account_items) == {"1"}
+
+        with patch("claude_usage.main.config.load_accounts", return_value=[PRO, TEAM]):
+            app.refresh(None)
+
+        assert set(app._account_items) == {"1", "2"}
+        assert app._account_items["2"].session_meter.title.endswith("12%")
+        assert app._account_items["2"].session_meter in list(app.menu.values())
+
+
+# --- Bakgrunnstråd --------------------------------------------------------
+
+
+def test_fetching_happens_off_the_calling_thread():
+    """Hentingen må ikke blokkere tråden menylinjen tegnes fra."""
+    threads = {}
+
+    def fetch(_cookie, _api_url):
+        threads["fetch"] = threading.current_thread()
+        return _usage()
+
+    def background(fn):
+        worker = threading.Thread(target=fn)
+        worker.start()
+        worker.join(timeout=5)
+
+    with patch("claude_usage.main.config.load_accounts", return_value=[PRO]), \
+         patch("claude_usage.main.config.load_active_account_key", return_value=None), \
+         patch("claude_usage.accounts.fetch_usage", side_effect=fetch):
+        ClaudeUsageApp(background=background, on_main=_sync)
+
+    assert threads["fetch"] is not threading.current_thread()
+
+
+def test_ui_updates_are_marshalled_back_to_the_main_thread():
+    """Alt som rører rumps må gå gjennom on_main — AppKit er ikke trådsikkert."""
+    calls = []
+
+    def background(fn):
+        worker = threading.Thread(target=fn)
+        worker.start()
+        worker.join(timeout=5)
+
+    def on_main(fn):
+        calls.append(threading.current_thread())
+        fn()
+
+    with patch("claude_usage.main.config.load_accounts", return_value=[PRO]), \
+         patch("claude_usage.main.config.load_active_account_key", return_value=None), \
+         patch("claude_usage.accounts.fetch_usage", return_value=_usage()):
+        app = ClaudeUsageApp(background=background, on_main=on_main)
+
+    assert len(calls) == 1  # rendering ble marshallet, ikke gjort i arbeidertråden
+    assert app.title == "43 · 76"
+
+
+def test_a_second_fetch_is_not_started_while_one_is_in_flight():
+    """Treg respons skal ikke bygge opp en kø av overlappende hentinger."""
+    started = []
+
+    with patch("claude_usage.main.config.load_accounts", return_value=[PRO]), \
+         patch("claude_usage.main.config.load_active_account_key", return_value=None), \
+         patch("claude_usage.accounts.fetch_usage", return_value=_usage()):
+        app = ClaudeUsageApp(background=started.append, on_main=_sync)
+
+        app.refresh(None)
+
+        assert len(started) == 1
+
+
+# --- Rene formateringsfunksjoner -----------------------------------------
 
 
 @pytest.mark.parametrize(
@@ -229,3 +422,13 @@ def test_format_footer_without_timestamp():
 def test_format_footer_with_timestamp():
     updated_at = datetime(2026, 7, 24, 12, 3, tzinfo=timezone.utc)
     assert format_footer("0.2.0", updated_at) == f"Oppdatert {_local_clock(updated_at)} · App v0.2.0"
+
+
+def test_last_account_does_not_add_a_second_separator_before_the_actions():
+    """Hver kontoseksjon avsluttes med et skille, men handlingene har sitt
+    eget — uten dette står det to streker på rad nederst."""
+    fetch = _by_cookie(**{"c-pro": _usage(), "c-team": _usage()})
+
+    with _app([PRO, TEAM], fetch) as (app, _):
+        assert app._account_items["1"].end_separator._menuitem.isHidden() is False
+        assert app._account_items["2"].end_separator._menuitem.isHidden() is True

@@ -2,7 +2,8 @@ node_modules/
 dist/
 dev-dist/
 .env
-.env.local
+.env.*
+!.env.example
 .firebase/
 *.log
 .DS_Store

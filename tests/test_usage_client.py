@@ -150,3 +150,12 @@ def test_fetch_usage_raises_fetch_error_on_network_error(mock_get):
 
     with pytest.raises(UsageFetchError):
         fetch_usage(cookie="session=abc", api_url=API_URL)
+
+
+@patch("claude_usage.usage_client.requests.get")
+def test_fetch_usage_explains_wrong_endpoint(mock_get):
+    # Svar fra et annet claude.ai-endepunkt, f.eks. .../user_settings
+    mock_get.return_value = _mock_response(200, {"userId": "u", "content": {}})
+
+    with pytest.raises(UsageFetchError, match="ikke et usage-endepunkt"):
+        fetch_usage(cookie="session=abc", api_url=API_URL)

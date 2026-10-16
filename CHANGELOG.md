@@ -7,6 +7,11 @@ og prosjektet følger [semantisk versjonering](https://semver.org/lang/nb/).
 
 ## [Unreleased]
 
+### Changed
+- Peker `_API_URL` på et annet claude.ai-endepunkt enn usage (f.eks.
+  `user_settings`), sier feilmeldingen det rett ut i stedet for å vise en
+  rå `'five_hour'`
+
 ## [0.4.0] - 2026-09-13
 
 ### Changed

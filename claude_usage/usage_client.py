@@ -51,6 +51,12 @@ def fetch_usage(cookie: str, api_url: str) -> UsageData:
 
 
 def _parse_usage(data: dict) -> UsageData:
+    # Et gyldig svar fra et annet claude.ai-endepunkt (f.eks. user_settings)
+    # mangler begge seksjonene. Si det rett ut i stedet for en rå KeyError.
+    if isinstance(data, dict) and "five_hour" not in data and "seven_day" not in data:
+        raise UsageFetchError(
+            "Adressen er ikke et usage-endepunkt – sjekk _API_URL i .env"
+        )
     session_percent = round(data["five_hour"]["utilization"])
     weekly_percent = round(data["seven_day"]["utilization"])
     return UsageData(

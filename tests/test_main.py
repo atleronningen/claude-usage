@@ -22,18 +22,16 @@ from claude_usage.usage_client import UsageAuthError, UsageData, UsageFetchError
 
 NOW = datetime(2026, 7, 24, 12, 33, 0, tzinfo=timezone.utc)
 
-def _account(key, label, cookie, api_url):
+def _account(key, label, cookie):
     return Account(
         key=key,
         label=label,
         cookie=cookie,
-        api_url=api_url,
-        cookie_env_key=f"CLAUDE_USAGE_ACCOUNT_{key}_COOKIE",
-        api_url_env_key=f"CLAUDE_USAGE_ACCOUNT_{key}_API_URL",
+        session_key_env_key=f"CLAUDE_USAGE_ACCOUNT_{key}_SESSION_KEY",
     )
 
-PRO = _account("1", "Pro", "c-pro", "https://x/1/usage")
-TEAM = _account("2", "Team Plan", "c-team", "https://x/2/usage")
+PRO = _account("1", "Pro", "c-pro")
+TEAM = _account("2", "Team Plan", "c-team")
 
 
 def _local_clock(dt: datetime) -> str:
@@ -202,7 +200,7 @@ def test_failure_on_inactive_account_leaves_title_intact():
     with _app([PRO, TEAM], fetch, active_key="1") as (app, _):
         assert app.title == "43 · 76"
         assert app._account_items["2"].error.hidden is False
-        assert app._account_items["2"].error.title == "Cookien utløpt – oppdater"
+        assert app._account_items["2"].error.title == "Innlogging utløpt – oppdater sessionKey"
         assert app._account_items["1"].error.hidden is True
 
 
@@ -247,7 +245,7 @@ def test_stale_numbers_survive_a_failed_refresh():
 
         group = app._account_items["1"]
         assert app.title == "⚠️"
-        assert group.error.title == "Cookien utløpt – oppdater"
+        assert group.error.title == "Innlogging utløpt – oppdater sessionKey"
         assert group.stale.hidden is False
         assert group.stale.title.startswith("Klikk for oppskrift · siste tall ")
         assert group.session_meter.hidden is False  # gamle tall vises fortsatt
@@ -260,13 +258,13 @@ def test_stale_numbers_survive_a_failed_refresh():
 def test_missing_credentials_shows_app_level_error():
     with patch(
         "claude_usage.main.config.load_accounts",
-        side_effect=CredentialsMissingError("Mangler cookie/API-URL i .env"),
+        side_effect=CredentialsMissingError("Mangler sessionKey i .env"),
     ), patch("claude_usage.main.config.load_active_account_key", return_value=None):
         app = ClaudeUsageApp()
 
     assert app.title == "⚠️"
     assert app.error_item.hidden is False
-    assert app.error_item.title == "Mangler cookie/API-URL i .env"
+    assert app.error_item.title == "Mangler sessionKey i .env"
     assert app._account_items == {}
     assert app.footer_item.title == f"App v{__version__}"
 

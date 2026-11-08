@@ -11,7 +11,7 @@ from claude_usage.accounts import Account
 
 CONFIG_DIR = Path.home() / ".claude-usage"
 
-ACCOUNT_KEY_PATTERN = re.compile(r"^CLAUDE_USAGE_ACCOUNT_(\d+)_(LABEL|COOKIE|API_URL)$")
+ACCOUNT_KEY_PATTERN = re.compile(r"^CLAUDE_USAGE_ACCOUNT_(\d+)_(LABEL|SESSION_KEY|COOKIE)$")
 
 
 class CredentialsMissingError(Exception):
@@ -39,12 +39,27 @@ def _settings() -> dict[str, str]:
     return values
 
 
+def _cookie_header(session_key: str | None, cookie: str | None) -> str | None:
+    """Cookie-headeren for én konto, eller None hvis kontoen mangler innlogging.
+
+    `_SESSION_KEY` vinner. En hel Cookie-header (`_COOKIE`, det gamle
+    formatet) virker fortsatt, siden sessionKey står inni den.
+    """
+    if session_key:
+        session_key = session_key.strip()
+        if session_key.startswith("sessionKey="):
+            session_key = session_key[len("sessionKey=") :]
+        return f"sessionKey={session_key}"
+    return cookie or None
+
+
 def load_accounts() -> list[Account]:
     """Kontoene fra .env, i nummerrekkefølge.
 
-    Nummererte nøkler (`CLAUDE_USAGE_ACCOUNT_1_COOKIE` osv.) er formatet.
-    Finnes ingen slike, tolkes de gamle unummererte nøklene som én konto,
-    slik at eksisterende oppsett virker uendret.
+    Nummererte nøkler (`CLAUDE_USAGE_ACCOUNT_1_SESSION_KEY` osv.) er
+    formatet. Finnes ingen slike, tolkes de gamle unummererte nøklene som én
+    konto, slik at eksisterende oppsett virker uendret. `_API_URL` leses ikke
+    lenger – usage-adressen slås opp automatisk.
     """
     values = _settings()
 
@@ -55,36 +70,35 @@ def load_accounts() -> list[Account]:
             number, field = match.groups()
             numbered.setdefault(number, {})[field] = value
 
-    accounts = [
-        Account(
-            key=number,
-            label=fields.get("LABEL") or f"Konto {number}",
-            cookie=fields["COOKIE"],
-            api_url=fields["API_URL"],
-            cookie_env_key=f"CLAUDE_USAGE_ACCOUNT_{number}_COOKIE",
-            api_url_env_key=f"CLAUDE_USAGE_ACCOUNT_{number}_API_URL",
-        )
-        for number, fields in sorted(numbered.items(), key=lambda item: int(item[0]))
-        if fields.get("COOKIE") and fields.get("API_URL")
-    ]
+    accounts = []
+    for number, fields in sorted(numbered.items(), key=lambda item: int(item[0])):
+        cookie = _cookie_header(fields.get("SESSION_KEY"), fields.get("COOKIE"))
+        if cookie:
+            accounts.append(
+                Account(
+                    key=number,
+                    label=fields.get("LABEL") or f"Konto {number}",
+                    cookie=cookie,
+                    session_key_env_key=f"CLAUDE_USAGE_ACCOUNT_{number}_SESSION_KEY",
+                )
+            )
 
     if not accounts:
-        cookie = values.get("CLAUDE_USAGE_COOKIE")
-        api_url = values.get("CLAUDE_USAGE_API_URL")
-        if cookie and api_url:
+        cookie = _cookie_header(
+            values.get("CLAUDE_USAGE_SESSION_KEY"), values.get("CLAUDE_USAGE_COOKIE")
+        )
+        if cookie:
             accounts = [
                 Account(
                     key="legacy",
                     label="Konto 1",
                     cookie=cookie,
-                    api_url=api_url,
-                    cookie_env_key="CLAUDE_USAGE_COOKIE",
-                    api_url_env_key="CLAUDE_USAGE_API_URL",
+                    session_key_env_key="CLAUDE_USAGE_SESSION_KEY",
                 )
             ]
 
     if not accounts:
-        raise CredentialsMissingError("Mangler cookie/API-URL i .env")
+        raise CredentialsMissingError("Mangler sessionKey i .env")
 
     return accounts
 

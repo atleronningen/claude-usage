@@ -8,9 +8,14 @@ og prosjektet følger [semantisk versjonering](https://semver.org/lang/nb/).
 ## [Unreleased]
 
 ### Changed
-- Peker `_API_URL` på et annet claude.ai-endepunkt enn usage (f.eks.
-  `user_settings`), sier feilmeldingen det rett ut i stedet for å vise en
-  rå `'five_hour'`
+- Hver konto trenger bare cookien `sessionKey` i
+  `CLAUDE_USAGE_ACCOUNT_<N>_SESSION_KEY`, ikke hele Cookie-headeren.
+  Cloudflare-cookiene som utløp etter kort tid, er ikke lenger med
+- Appen finner selv kontoens organisasjon og usage-adresse, så
+  `_API_URL` er fjernet. Dermed kan en feil adresse ikke lenger ødelegge
+  hentingen
+- Hjelpeteksten i menyen viser hvordan sessionKey kopieres fra Chrome
+- Eldre oppsett med hel Cookie-header i `_COOKIE` virker fortsatt
 
 ## [0.4.0] - 2026-09-13
 

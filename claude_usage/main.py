@@ -645,18 +645,16 @@ class ClaudeUsageApp(rumps.App):
 
         subprocess.run(["open", "-e", str(config.env_file_path())])
         rumps.alert(
-            title=f"Slik fornyer du cookien for «{account.label}»",
+            title=f"Slik fornyer du innloggingen for «{account.label}»",
             message=(
-                f"Logg inn som {account.label} i nettleseren først — hver konto\n"
-                "har sin egen cookie.\n\n"
-                "1. Åpne claude.ai/settings/usage i nettleseren\n"
-                "2. Åpne utviklerverktøy (⌘+⌥+I) → Network-fanen\n"
-                "3. Last siden på nytt, klikk på \"usage\"-forespørselen\n"
-                "4. Under Headers → Request Headers: kopier hele Cookie-verdien\n"
-                f"   og lim inn i {account.cookie_env_key}\n"
-                "5. Under Headers: kopier feltet Request URL (øverst) og lim\n"
-                f"   inn i {account.api_url_env_key}\n"
-                "6. Lagre .env-filen som nettopp åpnet seg — appen henter\n"
+                f"Logg inn som {account.label} i Chrome først – hver konto\n"
+                "har sin egen sessionKey.\n\n"
+                "1. Åpne claude.ai i Chrome\n"
+                "2. Åpne utviklerverktøy (⌘+⌥+I) → Application-fanen\n"
+                "3. Velg Storage → Cookies → https://claude.ai i venstremenyen\n"
+                "4. Finn raden sessionKey og kopier verdien (sk-ant-…)\n"
+                f"5. Lim den inn i {account.session_key_env_key}\n"
+                "6. Lagre .env-filen som nettopp åpnet seg – appen henter\n"
                 "   automatisk på nytt innen ett minutt"
             ),
         )
@@ -666,15 +664,14 @@ class ClaudeUsageApp(rumps.App):
         rumps.alert(
             title="Slik setter du opp en konto",
             message=(
-                "1. Åpne claude.ai/settings/usage i nettleseren\n"
-                "2. Åpne utviklerverktøy (⌘+⌥+I) → Network-fanen\n"
-                "3. Last siden på nytt, klikk på \"usage\"-forespørselen\n"
-                "4. Under Headers → Request Headers: kopier hele Cookie-verdien\n"
-                "   og lim inn i CLAUDE_USAGE_ACCOUNT_1_COOKIE\n"
-                "5. Under Headers: kopier feltet Request URL (øverst) og lim\n"
-                "   inn i CLAUDE_USAGE_ACCOUNT_1_API_URL\n"
+                "1. Åpne claude.ai i Chrome\n"
+                "2. Åpne utviklerverktøy (⌘+⌥+I) → Application-fanen\n"
+                "3. Velg Storage → Cookies → https://claude.ai i venstremenyen\n"
+                "4. Finn raden sessionKey og kopier verdien (sk-ant-…)\n"
+                "5. Lim den inn i CLAUDE_USAGE_ACCOUNT_1_SESSION_KEY\n"
                 "6. Gi kontoen et navn i CLAUDE_USAGE_ACCOUNT_1_LABEL, f.eks. Pro\n\n"
-                "Flere kontoer: gjenta med ACCOUNT_2, ACCOUNT_3 osv."
+                "Flere kontoer: gjenta med ACCOUNT_2, ACCOUNT_3 osv. Logg inn\n"
+                "med hver konto i sin egen Chrome-profil."
             ),
         )
 

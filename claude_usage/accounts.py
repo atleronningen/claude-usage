@@ -14,6 +14,7 @@ from claude_usage.usage_client import (
     UsageAuthError,
     UsageData,
     UsageFetchError,
+    discover_usage_url,
     fetch_usage,
 )
 
@@ -27,16 +28,14 @@ class Account:
     """Visningsnavn i menyen, typisk plantypen: «Pro», «Max», «Team Plan»."""
 
     cookie: str
-    api_url: str
+    """Cookie-headeren som sendes, typisk bare `sessionKey=sk-ant-…`."""
 
-    cookie_env_key: str
-    """Nøkkelen denne cookien faktisk står under i .env.
+    session_key_env_key: str
+    """Nøkkelen hjelpeteksten ber brukeren lime sessionKey inn i.
 
-    En gammel .env bruker CLAUDE_USAGE_COOKIE, en nummerert bruker
-    CLAUDE_USAGE_ACCOUNT_2_COOKIE — hjelpeteksten må navngi den riktige.
+    En gammel unummerert .env bruker CLAUDE_USAGE_SESSION_KEY, en nummerert
+    CLAUDE_USAGE_ACCOUNT_2_SESSION_KEY – teksten må navngi den riktige.
     """
-
-    api_url_env_key: str
 
 
 @dataclass(frozen=True)
@@ -66,19 +65,47 @@ def resolve_active(accounts: list[Account], stored_key: str | None) -> Account:
     return accounts[0]
 
 
+_usage_urls: dict[str, str] = {}
+"""Usage-adressen per cookie, så organisasjonen ikke slås opp hvert minutt.
+
+Nøklet på cookien: en ny sessionKey i .env gir automatisk nytt oppslag.
+Hver konto skrives bare fra sin egen tråd, og dict-operasjoner er atomiske
+under GIL, så parallelle hentinger trenger ingen lås.
+"""
+
+
+def _usage_url(cookie: str) -> str:
+    url = _usage_urls.get(cookie)
+    if url is None:
+        url = discover_usage_url(cookie)
+        _usage_urls[cookie] = url
+    return url
+
+
 def _fetch_one(
     account: Account, previous: AccountUsage | None, now: datetime
 ) -> AccountUsage:
     try:
-        usage = fetch_usage(account.cookie, account.api_url)
-    except UsageAuthError:
-        return _failure(account, previous, "Cookien utløpt – oppdater", actionable=True)
-    except UsageFetchError as exc:
-        return _failure(account, previous, str(exc), actionable=True)
+        usage = fetch_usage(account.cookie, _usage_url(account.cookie))
     except Exception as exc:
-        return _failure(account, previous, f"Uventet feil: {exc}", actionable=False)
+        # Slå opp organisasjonen på nytt neste runde – adressen kan være
+        # årsaken til feilen.
+        _usage_urls.pop(account.cookie, None)
+        return _fetch_failure(account, previous, exc)
 
     return AccountUsage(account=account, usage=usage, updated_at=now)
+
+
+def _fetch_failure(
+    account: Account, previous: AccountUsage | None, exc: Exception
+) -> AccountUsage:
+    if isinstance(exc, UsageAuthError):
+        message, actionable = "Innlogging utløpt – oppdater sessionKey", True
+    elif isinstance(exc, UsageFetchError):
+        message, actionable = str(exc), True
+    else:
+        message, actionable = f"Uventet feil: {exc}", False
+    return _failure(account, previous, message, actionable=actionable)
 
 
 def _failure(

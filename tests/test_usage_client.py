@@ -7,6 +7,7 @@ from claude_usage.usage_client import (
     UsageAuthError,
     UsageData,
     UsageFetchError,
+    discover_usage_url,
     fetch_usage,
 )
 
@@ -153,9 +154,57 @@ def test_fetch_usage_raises_fetch_error_on_network_error(mock_get):
 
 
 @patch("claude_usage.usage_client.requests.get")
-def test_fetch_usage_explains_wrong_endpoint(mock_get):
-    # Svar fra et annet claude.ai-endepunkt, f.eks. .../user_settings
+def test_fetch_usage_names_unknown_format(mock_get):
     mock_get.return_value = _mock_response(200, {"userId": "u", "content": {}})
 
-    with pytest.raises(UsageFetchError, match="ikke et usage-endepunkt"):
+    with pytest.raises(UsageFetchError, match="ukjent format"):
         fetch_usage(cookie="session=abc", api_url=API_URL)
+
+
+# --- Organisasjonsoppslag -------------------------------------------------
+
+
+@patch("claude_usage.usage_client.requests.get")
+def test_discover_usage_url_picks_the_chat_org(mock_get):
+    """En Pro-konto har ofte også en API-organisasjon, som gir 403 på usage."""
+    mock_get.return_value = _mock_response(
+        200,
+        [
+            {"uuid": "api-org", "capabilities": ["api", "api_individual"]},
+            {"uuid": "chat-org", "capabilities": ["claude_pro", "chat"]},
+        ],
+    )
+
+    url = discover_usage_url("sessionKey=sk-ant-x")
+
+    assert url == "https://claude.ai/api/organizations/chat-org/usage"
+    mock_get.assert_called_once_with(
+        "https://claude.ai/api/organizations",
+        headers={"Cookie": "sessionKey=sk-ant-x"},
+        impersonate="chrome",
+        timeout=10,
+    )
+
+
+@patch("claude_usage.usage_client.requests.get")
+def test_discover_usage_url_raises_when_no_chat_org(mock_get):
+    mock_get.return_value = _mock_response(200, [{"uuid": "a", "capabilities": ["api"]}])
+
+    with pytest.raises(UsageFetchError, match="Fant ingen"):
+        discover_usage_url("sessionKey=sk-ant-x")
+
+
+@patch("claude_usage.usage_client.requests.get")
+def test_discover_usage_url_raises_auth_error_on_401(mock_get):
+    mock_get.return_value = _mock_response(401)
+
+    with pytest.raises(UsageAuthError):
+        discover_usage_url("sessionKey=utløpt")
+
+
+@patch("claude_usage.usage_client.requests.get")
+def test_discover_usage_url_raises_fetch_error_on_unexpected_shape(mock_get):
+    mock_get.return_value = _mock_response(200, {"ikke": "en liste"})
+
+    with pytest.raises(UsageFetchError):
+        discover_usage_url("sessionKey=sk-ant-x")

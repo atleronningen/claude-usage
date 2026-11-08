@@ -52,32 +52,31 @@ Autostart-oppsettet (LaunchAgenten) har prosjektmappens absolutte sti
 hardkodet fra installasjonstidspunktet. Flytter du mappen til et annet sted,
 finner appen ikke veien fra `~/Applications`-ikonet lenger. Kjør `./install`
 på nytt fra den nye plasseringen for å fikse dette — `.env` ligger i
-prosjektmappen og flyttes med, så du trenger ikke hente ny cookie/org-ID.
+prosjektmappen og flyttes med, så du trenger ikke hente ny sessionKey.
 
-### Sett opp cookien
+### Sett opp innloggingen
 
-Første gang må du selv hente en cookie fra nettleseren din:
+Appen trenger én verdi per konto: cookien `sessionKey` fra claude.ai. Hent
+den fra Chrome første gang:
 
-1. Åpne `claude.ai/settings/usage`, åpne utviklerverktøy (⌘+⌥+I) →
-   Network-fanen
-2. Last siden på nytt, klikk på `usage`-forespørselen
-3. Under **Headers** → **Request Headers**: kopier hele
-   `Cookie`-verdien
-4. Lim den inn som `CLAUDE_USAGE_ACCOUNT_1_COOKIE` i `.env`-filen
+1. Åpne `claude.ai` i Chrome, og åpne utviklerverktøy (⌘+⌥+I) →
+   **Application**-fanen
+2. Velg **Storage** → **Cookies** → `https://claude.ai` i venstremenyen
+3. Finn raden `sessionKey` og kopier verdien (begynner med `sk-ant-`)
+4. Lim den inn som `CLAUDE_USAGE_ACCOUNT_1_SESSION_KEY` i `.env`-filen
    (opprettet av `./install`)
-5. Under **Headers**: kopier feltet **Request URL** (øverst i panelet)
-   og lim den inn som `CLAUDE_USAGE_ACCOUNT_1_API_URL` (ser slik ut:
-   `https://claude.ai/api/organizations/<org-id>/usage`)
-6. Gi kontoen et navn i `CLAUDE_USAGE_ACCOUNT_1_LABEL` — det vises i
+5. Gi kontoen et navn i `CLAUDE_USAGE_ACCOUNT_1_LABEL` – det vises i
    menyen, så plantypen er et greit valg: `Pro`, `Max`, `Team Plan`
 
-Cookien utløper med jevne mellomrom. Når appen viser ⚠️ i menylinjen,
-klikk på feilmeldingen i dropdown-menyen — den åpner `.env` i TextEdit
-og viser oppskriften for nettopp den kontoen.
+Appen finner selv riktig organisasjon og usage-adresse for kontoen.
 
-Har du en eldre `.env` med `CLAUDE_USAGE_COOKIE` og
-`CLAUDE_USAGE_API_URL` uten nummer, virker den fortsatt som den er —
-den tolkes som én konto.
+sessionKey utløper etter en tid, eller når du logger ut av claude.ai. Når
+appen viser ⚠️ i menylinjen, klikker du på feilmeldingen i dropdown-menyen.
+Den åpner `.env` i TextEdit og viser oppskriften for nettopp den kontoen.
+
+Eldre oppsett virker fortsatt: en hel Cookie-header i `_COOKIE` (eller
+`CLAUDE_USAGE_COOKIE` uten nummer) fungerer, siden sessionKey står inni den.
+`_API_URL` leses ikke lenger og kan slettes.
 
 ### Flere kontoer
 
@@ -85,17 +84,15 @@ Legg til en blokk per konto, nummerert fortløpende:
 
 ```
 CLAUDE_USAGE_ACCOUNT_1_LABEL=Pro
-CLAUDE_USAGE_ACCOUNT_1_COOKIE=...
-CLAUDE_USAGE_ACCOUNT_1_API_URL=https://claude.ai/api/organizations/<org-id>/usage
+CLAUDE_USAGE_ACCOUNT_1_SESSION_KEY=sk-ant-...
 
 CLAUDE_USAGE_ACCOUNT_2_LABEL=Team Plan
-CLAUDE_USAGE_ACCOUNT_2_COOKIE=...
-CLAUDE_USAGE_ACCOUNT_2_API_URL=https://claude.ai/api/organizations/<annen-org-id>/usage
+CLAUDE_USAGE_ACCOUNT_2_SESSION_KEY=sk-ant-...
 ```
 
-Hver konto trenger sin egen cookie, hentet mens du er logget inn som
-den kontoen. claude.ai holder bare én innlogging per nettleserprofil,
-så bruk to profiler (eller et privat vindu) når du henter den andre.
+Hver konto trenger sin egen sessionKey, hentet mens du er logget inn som
+den kontoen. claude.ai holder bare én innlogging per nettleserprofil, så
+bruk én Chrome-profil per konto.
 
 Alle kontoer hentes hvert minutt, parallelt. Menylinjetittelen viser
 den kontoen som er merket med hake i dropdown-menyen — klikk på en

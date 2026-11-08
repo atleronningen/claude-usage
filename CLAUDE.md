@@ -30,9 +30,13 @@ usage-API er bak Cloudflare-beskyttelse som blokkerer på TLS-fingerprint
 - `claude_usage/main.py` — rumps-appen (menylinje-UI)
 - `scripts/` — LaunchAgent-plist og installasjonsskript
 - `.env` (gitignored) — én blokk per konto:
-  `CLAUDE_USAGE_ACCOUNT_<N>_LABEL` / `_COOKIE` / `_API_URL`, se `.env.example`.
-  Gamle unummererte `CLAUDE_USAGE_COOKIE`/`CLAUDE_USAGE_API_URL` tolkes som
-  én konto, så eksisterende oppsett virker uendret.
+  `CLAUDE_USAGE_ACCOUNT_<N>_LABEL` / `_SESSION_KEY`, se `.env.example`.
+  Bare cookien `sessionKey` trengs; Cloudflare-cookiene er unødvendige når
+  `curl_cffi` etterligner Chrome. Usage-adressen slås opp via
+  `/api/organizations` (organisasjonen med `chat` i `capabilities` – en
+  API-organisasjon gir 403 på usage) og hurtiglagres per cookie i
+  `accounts.py`. Gammel hel Cookie-header i `_COOKIE` og unummererte
+  `CLAUDE_USAGE_COOKIE` virker fortsatt; `_API_URL` ignoreres.
 
 Hentingen kjører i bakgrunnstråd. Alt som rører rumps skjer i `_apply` og
 metodene den kaller, marshallet tilbake til hovedtråden med

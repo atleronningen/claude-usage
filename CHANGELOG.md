@@ -7,6 +7,8 @@ og prosjektet følger [semantisk versjonering](https://semver.org/lang/nb/).
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-11-08
+
 ### Changed
 - Hver konto trenger bare cookien `sessionKey` i
   `CLAUDE_USAGE_ACCOUNT_<N>_SESSION_KEY`, ikke hele Cookie-headeren.
